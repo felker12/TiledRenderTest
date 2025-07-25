@@ -13,8 +13,7 @@ namespace TiledRenderTest
 
         //Round the position to whole numbers to align with the grid and prevent subpixel rendering (seams around the edges of tiles)
         public Matrix Transformation => Matrix.CreateTranslation(
-            new Vector3(-new Vector2((float)Math.Round(Position.X), (float)Math.Round(Position.Y)), 0f)
-        );
+            new Vector3(-new Vector2((float)Math.Round(Position.X), (float)Math.Round(Position.Y)), 0f));
 
         public void Update(Vector2 playerPosition)
         {

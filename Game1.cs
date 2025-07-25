@@ -26,8 +26,11 @@ namespace TiledRenderTest
         public Shapes.Rectangle Rectangle3 { get; set; } = new(100, 100, 100, 100, Color.RoyalBlue);
 
         public Star Star { get; set; } = new(new(-250, -50), Color.DarkSlateGray, 6);
+        public Star Star2 { get; set; } = new(new(50, -50), Color.DarkSlateGray, 4);
 
         public Polygon Polygon { get; set; } = new();
+
+        public Triangle Triangle { get; set; } =new();
 
         internal List<TileMap> Maps { get; set; } = [];
 
@@ -65,6 +68,8 @@ namespace TiledRenderTest
                 ];
 
             Polygon.Points = points;
+
+            Star2.SetData(80, 30, 5);
         }
 
         protected override void LoadContent()
@@ -105,12 +110,15 @@ namespace TiledRenderTest
             // TODO: Add your update logic here
             DungeonMap.Update(gameTime);
 
-            Sprite.Update(gameTime);
-            Sprite2.Update(gameTime);
+            //Sprite.Update(gameTime);
+            //Sprite2.Update(gameTime);
+
             Player.Update(gameTime);
             Camera.Update(Player.Position);
 
             base.Update(gameTime);
+
+            //Debug.WriteLine($"Player Position: {Player.Position}");
         }
 
         protected override void Draw(GameTime gameTime)
@@ -133,8 +141,7 @@ namespace TiledRenderTest
             //tileMap.Draw(SpriteBatch, Camera.Transformation);
             //DungeonMap.Draw(SpriteBatch);
 
-
-            Sprite.Draw(SpriteBatch);
+            //Sprite.Draw(SpriteBatch);
             //Sprite2.Draw(SpriteBatch);
             Player.Draw(SpriteBatch);
 
@@ -150,13 +157,28 @@ namespace TiledRenderTest
 
             //Polygon.DrawOutline(SpriteBatch, 4);
 
+
+            //Triangle.DrawOutline(SpriteBatch);
+
             SpriteBatch.End();
 
             //Rectangle.DrawOutlineUsingPrimitives(GraphicsDevice, Camera.Transformation);
             //Line2.DrawThickUsingPrimitives(GraphicsDevice, Camera.Transformation);
 
-            Star.DrawUsingPrimitives(GraphicsDevice);
-        }
+            //Star.DrawOutlineUsingPrimitives(GraphicsDevice, Camera.Transformation);
+            //Star2.DrawThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 3);
+            //Star2.DrawFilledUsingPrimitives(GraphicsDevice, Camera.Transformation);
+
+            Star2.DrawStarOutlineThickWithTriangles(GraphicsDevice, Camera.Transformation, 3);
+
+            //Triangle.DrawOutlineUsingPrimitives(GraphicsDevice, Camera.Transformation);
+            //Triangle.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 5);
+
+            //Rectangle.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 5);
+
+            //Triangle.DrawFilledUsingPrimitives(GraphicsDevice, Camera.Transformation);
+            Triangle.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 3);
+            }
 
         public static Texture2D CreateTextureFromColor(Color color)
         {

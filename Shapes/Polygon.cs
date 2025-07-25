@@ -12,22 +12,23 @@ namespace TiledRenderTest.Shapes
     {
         public Vector2[] Points { get; set; } =[];
         public Line[] Sides => ToLines(Points, Color);
+        public VertexPositionColor[] Vertices => [.. Points.Select(point => ToVertexPositionColor(point, Color))];
 
-        public Polygon(Vector2[] vertices, Color color) : base(color)
+        protected Polygon(Vector2[] vertices, Color color) : base(color)
         {
             Points = vertices;
         }
 
-        public Polygon(Vector2[] vertices) : base()
+        protected Polygon(Vector2[] vertices) : base()
         {
             Points = vertices;
         }
 
-        protected Polygon(Vector2 center, Color color) : base(center, color)
+        protected Polygon(Vector2 position, Color color) : base(position, color)
         {
         }
 
-        protected Polygon(Vector2 center) : base(center)
+        protected Polygon(Vector2 position) : base(position)
         {
         }
 
@@ -67,6 +68,25 @@ namespace TiledRenderTest.Shapes
                 side.Thickness = outlineThickness;
                 side.Draw(spriteBatch);
             }
+        }
+
+        public override void DrawOutlineUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix)
+        {
+            foreach (var side in Sides)
+            {
+                side.DrawUsingPrimitives(graphicsDevice, transformMatrix);
+            }
+        }
+
+        public override void DrawOutlineUsingPrimitives(SpriteBatch spriteBatch, Matrix transformMatrix)
+        {
+            DrawOutlineUsingPrimitives(spriteBatch.GraphicsDevice, transformMatrix);
+        }
+
+        public override void DrawOutlineThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix, int thickness = 1)
+        {
+            foreach (var side in Sides)
+                side.DrawThickUsingPrimitives(graphicsDevice, transformMatrix, thickness);
         }
     }
 }

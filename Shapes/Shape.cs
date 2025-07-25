@@ -34,6 +34,13 @@ namespace TiledRenderTest.Shapes
         {
         }
 
+        public virtual void Update(GameTime gameTime)
+        {
+            // Default update logic, can be overridden by derived classes
+            // This method can be used to update the shape's state, position, etc.
+            throw new NotImplementedException("Update method must be implemented in derived classes.");
+        }
+
         public virtual void Draw(SpriteBatch spriteBatch)
         {
             // Default draw logic, can be overridden by derived classes
@@ -48,11 +55,28 @@ namespace TiledRenderTest.Shapes
             throw new NotImplementedException("DrawOutline method must be implemented in derived classes.");
         }
 
-        public virtual void Update(GameTime gameTime)
+        public virtual void DrawOutlineUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix)
         {
-            // Default update logic, can be overridden by derived classes
-            // This method can be used to update the shape's state, position, etc.
-            throw new NotImplementedException("Update method must be implemented in derived classes.");
+            // Default outline draw logic, can be overridden by derived classes
+            // This method should be implemented in derived classes to provide specific outline drawing behavior
+            throw new NotImplementedException("DrawOutlineUsingPrimitives method must be implemented in derived classes.");
+        }
+
+        public virtual void DrawOutlineUsingPrimitives(SpriteBatch spriteBatch, Matrix transformMatrix)
+        {
+            DrawOutlineUsingPrimitives(spriteBatch.GraphicsDevice, transformMatrix);
+        }
+
+        public virtual void DrawOutlineThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix, int thickness = 1)
+        {
+            // Default outline draw logic, can be overridden by derived classes
+            // This method should be implemented in derived classes to provide specific outline drawing behavior
+            throw new NotImplementedException("DrawOutlineThickUsingPrimitives method must be implemented in derived classes.");
+        }
+
+        public virtual void DrawFilledUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
+        {
+            throw new NotImplementedException("DrawFilledUsingPrimitives method must be implemented in derived classes.");
         }
 
         public static Vector3 ToVector3(Vector2 vector)

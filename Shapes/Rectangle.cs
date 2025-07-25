@@ -1,10 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TiledRenderTest.Shapes
 {
@@ -83,7 +79,7 @@ namespace TiledRenderTest.Shapes
             }
         }
 
-        public void DrawOutlineUsingPrimitives(SpriteBatch spriteBatch)
+        public void DrawOutlineUsingPrimitives(SpriteBatch spriteBatch) //this stays fixed on the screen. If the camera moves this follows
         {
             GraphicsDevice graphicsDevice = spriteBatch.GraphicsDevice;
             BasicEffect basicEffect = new(spriteBatch.GraphicsDevice)
@@ -100,7 +96,7 @@ namespace TiledRenderTest.Shapes
             }
         }
 
-        public void DrawOutlineUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix)
+        public override void DrawOutlineUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix)
         {
             BasicEffect basicEffect = new(graphicsDevice)
             {
@@ -119,9 +115,15 @@ namespace TiledRenderTest.Shapes
             }
         }
 
-        public void DrawOutlineUsingPrimitives(SpriteBatch spriteBatch, Matrix transformMatrix)
+        public override void DrawOutlineUsingPrimitives(SpriteBatch spriteBatch, Matrix transformMatrix)
         {
             DrawOutlineUsingPrimitives(spriteBatch.GraphicsDevice, transformMatrix);
+        }
+
+        public override void DrawOutlineThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix, int thickness = 2)
+        {
+            foreach (var side in Sides)
+                side.DrawThickUsingPrimitives(graphicsDevice, transformMatrix, thickness);
         }
     }
 }
