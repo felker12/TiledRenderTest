@@ -1,0 +1,169 @@
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+using System.Collections.Generic;
+using System.Diagnostics;
+using TiledRenderTest.Engine;
+using TiledRenderTest.Shapes;
+
+namespace TiledRenderTest
+{
+    public class Game1 : Game
+    {
+        public static GraphicsDeviceManager GraphicsDeviceManager { get; private set; }
+        private SpriteBatch SpriteBatch { get; set; }
+        public static int ScreenWidth { get; set; } = 1280;
+        public static int ScreenHeight { get; set; } = 720;
+        Sprite Sprite { get; set; } = new();
+        Sprite Sprite2 { get; set; } = new();
+        Player Player { get; set; } = new();
+        Camera Camera { get; set; }
+
+        public Line Line { get; set; } = new(new Vector2(100, 100), new Vector2(200, 200), Color.Red) { Thickness = 8 };
+        public Line Line2 { get; set; } = new(new Vector2(200, 200), new Vector2(300, 300), Color.BlueViolet) { Thickness = 8};
+        public Shapes.Rectangle Rectangle { get; set; } = new(100, 100, 100, 100);
+        public Shapes.Rectangle Rectangle2 { get; set; } = new(0, 0, 100, 100);
+        public Shapes.Rectangle Rectangle3 { get; set; } = new(100, 100, 100, 100, Color.RoyalBlue);
+
+        public Star Star { get; set; } = new(new(-250, -50), Color.DarkSlateGray, 6);
+
+        public Polygon Polygon { get; set; } = new();
+
+        internal List<TileMap> Maps { get; set; } = [];
+
+
+        private TileMap tileMap;
+        private TileMap DungeonMap;
+
+        public Game1()
+        {
+            GraphicsDeviceManager = new GraphicsDeviceManager(this)
+            {
+                PreferredBackBufferWidth = ScreenWidth,
+                PreferredBackBufferHeight = ScreenHeight,
+            };
+
+            Content.RootDirectory = "Content";
+            IsMouseVisible = true;
+        }
+
+        protected override void Initialize()
+        {
+            // TODO: Add your initialization logic here
+
+            base.Initialize();
+
+            Sprite.Texture = CreateTextureFromColor(Color.Chocolate);
+            Sprite2.Texture = CreateTextureFromColor(Color.Red);
+            Sprite2.Position = new(300, 50);
+            Player.Texture = CreateTextureFromColor(Color.DarkBlue);
+            Player.Position = new(100, 100);
+            Camera = new(ScreenWidth, ScreenHeight);
+
+
+            Vector2[] points = [new(0,0), new(50,50), new(50,100), new(100,100), new(120,120), new(150,150), new(150,120), new(100,120)
+                ];
+
+            Polygon.Points = points;
+        }
+
+        protected override void LoadContent()
+        {
+            SpriteBatch = new SpriteBatch(GraphicsDevice);
+
+            // TODO: use this.Content to load your game content here
+
+
+
+            tileMap = new(Content);
+            tileMap.LoadFromTmx("Content/Catacombs1.tmx");
+
+            DungeonMap = new(Content);
+            DungeonMap.LoadFromTmx("Content/Dungeon.tmx");
+
+            Debug.WriteLine("\n");
+            //Debug.WriteLine(tileMap.ToString());
+            //Debug.WriteLine(DungeonMap.ToString());
+
+            Debug.WriteLine("\n");
+            foreach (var layer in tileMap.Layers)
+            {
+                Debug.WriteLine(layer.ToString());
+            }
+            Debug.WriteLine("\n");
+            foreach (var layer in DungeonMap.Layers)
+            {
+                Debug.WriteLine(layer.ToString());
+            }
+        }
+
+        protected override void Update(GameTime gameTime)
+        {
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+                Exit();
+
+            // TODO: Add your update logic here
+            DungeonMap.Update(gameTime);
+
+            Sprite.Update(gameTime);
+            Sprite2.Update(gameTime);
+            Player.Update(gameTime);
+            Camera.Update(Player.Position);
+
+            base.Update(gameTime);
+        }
+
+        protected override void Draw(GameTime gameTime)
+        {
+            GraphicsDevice.Clear(Color.CornflowerBlue);
+
+            // TODO: Add your drawing code here
+
+            //base.Draw(gameTime);
+
+            SpriteBatch.Begin(
+                SpriteSortMode.Deferred,
+                BlendState.AlphaBlend,
+                SamplerState.PointClamp,
+                null,
+                null,
+                null,
+                Camera.Transformation);
+
+            //tileMap.Draw(SpriteBatch, Camera.Transformation);
+            //DungeonMap.Draw(SpriteBatch);
+
+
+            Sprite.Draw(SpriteBatch);
+            //Sprite2.Draw(SpriteBatch);
+            Player.Draw(SpriteBatch);
+
+            //Line.Draw(SpriteBatch);
+            //Rectangle2.DrawOutline(SpriteBatch, Color.Violet);
+            //Rectangle.DrawOutlineUsingPrimitives(SpriteBatch);
+            //Rectangle.DrawOutline(SpriteBatch);
+            //Rectangle3.Draw(SpriteBatch);
+            //Rectangle3.DrawOutline(SpriteBatch);
+            //Line2.Draw(SpriteBatch);
+
+            //Star.DrawOutline(SpriteBatch);
+
+            //Polygon.DrawOutline(SpriteBatch, 4);
+
+            SpriteBatch.End();
+
+            //Rectangle.DrawOutlineUsingPrimitives(GraphicsDevice, Camera.Transformation);
+            //Line2.DrawThickUsingPrimitives(GraphicsDevice, Camera.Transformation);
+
+            Star.DrawUsingPrimitives(GraphicsDevice);
+        }
+
+        public static Texture2D CreateTextureFromColor(Color color)
+        {
+            Texture2D texture = new(GraphicsDeviceManager.GraphicsDevice, 1, 1);
+            texture.SetData([color]);
+
+            return texture;
+        }
+    }
+}
