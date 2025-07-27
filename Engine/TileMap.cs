@@ -143,7 +143,7 @@ namespace TiledRenderTest.Engine
                     }
 
                     Layers.Add(tileLayer);
-                    Debug.WriteLine($"Loaded layer: {tileLayer.Name} (ID: {tileLayer.ID}) with {tileLayer.Tiles.Count} tiles.");
+                    //Debug.WriteLine($"Loaded layer: {tileLayer.Name} (ID: {tileLayer.ID}) with {tileLayer.Tiles.Count} tiles.");
                 }
                 else if (layerElement.Name == "objectgroup")
                 {
@@ -185,7 +185,7 @@ namespace TiledRenderTest.Engine
                     }
 
                     Layers.Add(objectLayer);
-                    Debug.WriteLine($"Loaded object layer: {objectLayer.Name} (ID: {objectLayer.ID}) with {objectLayer.MapObjects.Count} objects.");
+                    //Debug.WriteLine($"Loaded object layer: {objectLayer.Name} (ID: {objectLayer.ID}) with {objectLayer.MapObjects.Count} objects.");
                 }
             }
         }

@@ -55,9 +55,7 @@ namespace TiledRenderTest.Shapes
         {
             foreach (var side in Sides)
             {
-                side.Color = outlineColor;
-                side.Thickness = outlineThickness;
-                side.Draw(spriteBatch);
+                side.Draw(spriteBatch, Color, outlineThickness);
             }
         }
 

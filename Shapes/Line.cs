@@ -16,7 +16,7 @@ namespace TiledRenderTest.Shapes
         public Vector2[] Points => [Position, Position2];
         public VertexPositionColor[] Vertices => [.. Points.Select(point => ToVertexPositionColor(point, Color))];
 
-        public Line() : base()
+        public Line()
         {
         }
 
@@ -32,12 +32,27 @@ namespace TiledRenderTest.Shapes
             Position2 = position2;
         }
 
+        public Line(float x, float y, float x2, float y2, Color color)
+        {
+            Position = new Vector2(x, y);
+            Position2 = new Vector2(x2, y2);
+            Color = color;
+        }
+
         public override void Draw(SpriteBatch spriteBatch)
         {
             Vector2 distance = Distance;
             float angle = (float)Math.Atan2(distance.Y, distance.X); // Calculate angle in radians
             float length = distance.Length();
             spriteBatch.Draw(Texture, Position, null, Color, angle, Vector2.Zero, new Vector2(length, Thickness), SpriteEffects.None, 0f);
+        }
+
+        public void Draw(SpriteBatch spriteBatch, Color color, int thickness)
+        {
+            Vector2 distance = Distance;
+            float angle = (float)Math.Atan2(distance.Y, distance.X); // Calculate angle in radians
+            float length = distance.Length();
+            spriteBatch.Draw(Texture, Position, null, color, angle, Vector2.Zero, new Vector2(length, thickness), SpriteEffects.None, 0f);
         }
 
         public void DrawUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix)
@@ -89,6 +104,11 @@ namespace TiledRenderTest.Shapes
         public void DrawThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix)
         {
             DrawThickUsingPrimitives(graphicsDevice, transformMatrix, Thickness);
+        }
+
+        public override string ToString()
+        {
+            return $"Position: {Position}, Position2 {Position2}, Distance: {Distance}, Thickness: {Thickness}";
         }
     }
 }

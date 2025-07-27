@@ -10,8 +10,8 @@ namespace TiledRenderTest.Shapes
 {
     public class Shape
     {
-        public Vector2 Position { get; set; } = Vector2.Zero;
-        public Color Color { get; set; } = Color.White; // Default color
+        public Vector2 Position { get; protected set; } = Vector2.Zero;
+        public Color Color { get; protected set; } = Color.White; // Default color
         public Texture2D Texture => Game1.CreateTextureFromColor(Color);
 
         public Shape(Vector2 position, Color color)

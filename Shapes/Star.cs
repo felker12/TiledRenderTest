@@ -13,17 +13,17 @@ namespace TiledRenderTest.Shapes
         public float InnerRadius { get; private set; } = 40;
         public VertexPositionColor[] FilledVertices => CreateFilledStarVertices(Position, OuterRadius, InnerRadius, Color, NumberOfPoints);
 
-        public List<Line> TriangularFillLines { get; set; } = [];
-        public List<Vector2> TriangularPoints { get; set; } = [];
         public List<Triangle> Triangles { get; set; } = [];
 
-        public Star(Vector2 center, int numbOfPoints = 5, int outerRadius = 100, int innerRadius = 40) : base(center)
+        public Star(Vector2 center, int numbOfPoints = 5, int outerRadius = 100, int innerRadius = 40)
         {
             NumberOfPoints = numbOfPoints; 
             OuterRadius = outerRadius;
             InnerRadius = innerRadius;
+            Position = center + new Vector2(OuterRadius, OuterRadius);
 
             Points = CreateStarOutline(center, OuterRadius, InnerRadius, NumberOfPoints);
+            Triangulate();
         }
 
         public Star(Vector2 center, Color color, int numbOfPoints = 5, int outerRadius = 100, int innerRadius = 40) : 
@@ -146,9 +146,20 @@ namespace TiledRenderTest.Shapes
         }
 
 
+        public void DrawStarOutLineWithTriangles(SpriteBatch spriteBatch)
+        {
+            foreach (Triangle t in Triangles)
+                t.DrawOutline(spriteBatch, Color);
+        }
+
+        public void DrawStarOutLineWithTriangles(SpriteBatch spriteBatch, Color color)
+        {
+            foreach (Triangle t in Triangles)
+                t.DrawOutline(spriteBatch, color);
+        }
 
 
-        public void DrawStarOutlineWithTriangles(GraphicsDevice graphicsDevice, Matrix viewMatrix)
+        public void DrawStarOutlineWithTrianglesUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
             foreach(Triangle t in Triangles)
             {
@@ -156,7 +167,7 @@ namespace TiledRenderTest.Shapes
             }
         }
 
-        public void DrawStarOutlineThickWithTriangles(GraphicsDevice graphicsDevice, Matrix viewMatrix, int thickness = 2)
+        public void DrawStarOutlineThickWithTrianglesUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix, int thickness = 2)
         {
             foreach (Triangle t in Triangles)
             {
@@ -167,8 +178,6 @@ namespace TiledRenderTest.Shapes
         public void Triangulate()
         {
             Triangles.Clear();
-            TriangularPoints.Clear();
-            TriangularFillLines.Clear();
 
             Vector2[] points = CreateStarOutline(Position, OuterRadius, InnerRadius, NumberOfPoints);
 
@@ -185,14 +194,6 @@ namespace TiledRenderTest.Shapes
                 // Create triangle from center to edge pair
                 Triangle triangle = new(center, p1, p2, Color);
                 Triangles.Add(triangle);
-            }
-
-            // Optionally build TriangularFillLines and TriangularPoints
-            foreach (var tri in Triangles)
-            {
-                TriangularFillLines.AddRange(tri.Sides);
-                TriangularPoints.AddRange(tri.Sides.Select(s => s.Position));
-                TriangularPoints.AddRange(tri.Sides.Select(s => s.Position2));
             }
         }
     }

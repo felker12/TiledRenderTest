@@ -26,6 +26,13 @@ namespace TiledRenderTest.Shapes
             Position3 = position3;
         }
 
+        public Triangle(Vector2 position, Vector2 position2, Vector2 position3) :
+            base(position)
+        {
+            Position2 = position2;
+            Position3 = position3;
+        }
+
         public override void Update(GameTime gameTime)
         {
             base.Update(gameTime);
@@ -50,9 +57,7 @@ namespace TiledRenderTest.Shapes
         {
             foreach (var side in Sides)
             {
-                side.Color = outlineColor;
-                side.Thickness = outlineThickness;
-                side.Draw(spriteBatch);
+                side.Draw(spriteBatch, outlineColor, outlineThickness);
             }
         }
 
