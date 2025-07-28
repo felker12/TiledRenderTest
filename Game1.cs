@@ -27,8 +27,9 @@ namespace TiledRenderTest
 
         public Star Star { get; set; } = new(new(-350, -50), Color.DarkSlateGray, 6);
         public Star Star2 { get; set; } = new(new(0, 0), Color.DarkSlateGray, 5);
-        //public Circle Circle { get; set; } = new(new(80, 80), 40, 32, Color.Orange);
+        public Circle Circle { get; set; } = new(new(80, 80), 40, 32, Color.Orange);
         public Circle Circle2 { get; set; } = new(new(0, 0), 100, 50, Color.Aquamarine);
+        public Circle Circle3 { get; set; } = new(new(200, 200), 300, 50, Color.Aquamarine);
         public Polygon Polygon { get; set; } = new();
 
         public Triangle Triangle { get; set; } =new(new(0,0), new(200,200), new(0,200));
@@ -62,7 +63,7 @@ namespace TiledRenderTest
             Sprite2.Texture = CreateTextureFromColor(Color.Red);
             Sprite2.Position = new(300, 50);
             Player.Texture = CreateTextureFromColor(Color.DarkBlue);
-            Player.Position = new(80, 80);
+            Player.Position = new(-40, 0);
             Camera = new(ScreenWidth, ScreenHeight);
 
 
@@ -148,34 +149,45 @@ namespace TiledRenderTest
             Player.Draw(SpriteBatch);
 
             //Line.Draw(SpriteBatch);
-            //Rectangle2.DrawOutline(SpriteBatch, Color.Violet);
+            Rectangle2.DrawOutline(SpriteBatch, Color.Violet);
             //Rectangle.DrawOutlineUsingPrimitives(SpriteBatch);
             //Rectangle.DrawOutline(SpriteBatch);
             //Rectangle3.Draw(SpriteBatch);
             //Rectangle3.DrawOutline(SpriteBatch);
             //Line2.Draw(SpriteBatch);
+            Rectangle.DrawOutLineWithTriangles(SpriteBatch);
 
             //Star.DrawOutline(SpriteBatch);
 
-            //Polygon.DrawOutline(SpriteBatch, 4);
+            //Polygon.DrawOutline(SpriteBatch, 2);
 
 
-            //Triangle.DrawOutline(SpriteBatch);
+            Triangle.DrawOutline(SpriteBatch);
 
             //Star.DrawStarOutLineWithTriangles(SpriteBatch);
+            Star.DrawOutLineWithTriangles(SpriteBatch);
+
+
             //Circle.DrawOutline(SpriteBatch);
             Circle2.DrawOutline(SpriteBatch);
+            //Circle.DrawOutLineWithTriangles(SpriteBatch);
+
+
+            //Circle3.DrawOutLineWithTriangles(SpriteBatch);
+
 
             SpriteBatch.End();
+
+            Circle3.DrawFilledUsingPrimitives(GraphicsDevice, Camera.Transformation);
 
             //Rectangle.DrawOutlineUsingPrimitives(GraphicsDevice, Camera.Transformation);
             //Line2.DrawThickUsingPrimitives(GraphicsDevice, Camera.Transformation);
 
             //Star.DrawOutlineUsingPrimitives(GraphicsDevice, Camera.Transformation);
             //Star2.DrawThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 3);
-            //Star2.DrawFilledUsingPrimitives(GraphicsDevice, Camera.Transformation);
+            Star2.DrawFilledUsingPrimitives(GraphicsDevice, Camera.Transformation);
 
-            //Star2.DrawStarOutlineThickWithTrianglesUsingPrimitives(GraphicsDevice, Camera.Transformation, 3);
+            //Star2.DrawStarOutlineThickWithTrianglesUsingPrimitives(GraphicsDevice, Camera.Transformation, 2);
 
             //Triangle.DrawOutlineUsingPrimitives(GraphicsDevice, Camera.Transformation);
             //Triangle.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 5);

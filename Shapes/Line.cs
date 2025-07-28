@@ -8,28 +8,33 @@ using System.Threading.Tasks;
 
 namespace TiledRenderTest.Shapes
 {
-    public class Line : Shape
+    public class Line
     {
+        public Vector2 Position { get; set; } = Vector2.Zero;
         public Vector2 Position2 { get; set; } = Vector2.Zero;
+        public Color Color { get; set; } = Color.White; // Default color
+        public Texture2D Texture => Game1.CreateTextureFromColor(Color);
+        public VertexPositionColor[] Vertices => [
+                new(new Vector3(Position, 0f), Color),
+                new(new Vector3(Position2, 0f), Color)];
         public Vector2 Distance => Position2 - Position;
         public int Thickness { get; set; } = 1;
-        public Vector2[] Points => [Position, Position2];
-        public VertexPositionColor[] Vertices => [.. Points.Select(point => ToVertexPositionColor(point, Color))];
 
-        public Line()
+        public Line() 
         {
         }
 
         public Line(Vector2 position, Vector2 position2)
-            : base(position)
         {
+            Position = position;
             Position2 = position2;
         }
 
-        public Line(Vector2 position, Vector2 position2, Color color)
-            : base(position, color)
+        public Line(Vector2 position, Vector2 position2, Color color) 
         {
+            Position = position;
             Position2 = position2;
+            Color = color;
         }
 
         public Line(float x, float y, float x2, float y2, Color color)
@@ -39,7 +44,7 @@ namespace TiledRenderTest.Shapes
             Color = color;
         }
 
-        public override void Draw(SpriteBatch spriteBatch)
+        public void Draw(SpriteBatch spriteBatch)
         {
             Vector2 distance = Distance;
             float angle = (float)Math.Atan2(distance.Y, distance.X); // Calculate angle in radians
@@ -109,6 +114,33 @@ namespace TiledRenderTest.Shapes
         public override string ToString()
         {
             return $"Position: {Position}, Position2 {Position2}, Distance: {Distance}, Thickness: {Thickness}";
+        }
+
+        public static VertexPositionColor[] GetThickLineVertices(Vector2 a, Vector2 b, float thickness, Color color)
+        {
+            Vector2 direction = b - a;
+            Vector2 normal = Vector2.Normalize(new Vector2(-direction.Y, direction.X)); // Perpendicular
+
+            Vector2 offset = normal * (thickness / 2f);
+
+            // Four corners of the quad
+            Vector2 a1 = a + offset;
+            Vector2 a2 = a - offset;
+            Vector2 b1 = b + offset;
+            Vector2 b2 = b - offset;
+
+            return
+            [
+                // Triangle 1 (clockwise)
+                new VertexPositionColor(new Vector3(a1, 0), color),
+                new VertexPositionColor(new Vector3(a2, 0), color),
+                new VertexPositionColor(new Vector3(b1, 0), color),
+
+                // Triangle 2 (clockwise)
+                new VertexPositionColor(new Vector3(b1, 0), color),
+                new VertexPositionColor(new Vector3(a2, 0), color),
+                new VertexPositionColor(new Vector3(b2, 0), color),
+            ];
         }
     }
 }

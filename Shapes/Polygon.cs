@@ -10,10 +10,6 @@ namespace TiledRenderTest.Shapes
 {
     public class Polygon : Shape
     {
-        public Vector2[] Points { get; set; } =[];
-        public Line[] Sides => ToLines(Points, Color);
-        public VertexPositionColor[] Vertices => [.. Points.Select(point => ToVertexPositionColor(point, Color))];
-
         protected Polygon(Vector2[] vertices, Color color) : base(color)
         {
             Points = vertices;
@@ -34,57 +30,6 @@ namespace TiledRenderTest.Shapes
 
         public Polygon() : base()
         {
-        }
-
-        public override void Update(GameTime gameTime)
-        {
-            base.Update(gameTime);
-        }
-
-        public virtual void Draw(SpriteBatch spriteBatch, int outlineThickness = 1)
-        {
-            DrawOutline(spriteBatch, outlineThickness);
-        }
-
-        public virtual void Draw(SpriteBatch spriteBatch, Color outlineColor, int outlineThickness = 1)
-        {
-            DrawOutline(spriteBatch, Color, outlineThickness);
-        }
-
-        public virtual void DrawOutline(SpriteBatch spriteBatch, Color outlineColor, int outlineThickness = 1)
-        {
-            foreach (var side in Sides)
-            {
-                side.Draw(spriteBatch, Color, outlineThickness);
-            }
-        }
-
-        public virtual void DrawOutline(SpriteBatch spriteBatch, int outlineThickness = 1)
-        {
-            foreach (var side in Sides)
-            {
-                side.Thickness = outlineThickness;
-                side.Draw(spriteBatch);
-            }
-        }
-
-        public override void DrawOutlineUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix)
-        {
-            foreach (var side in Sides)
-            {
-                side.DrawUsingPrimitives(graphicsDevice, transformMatrix);
-            }
-        }
-
-        public override void DrawOutlineUsingPrimitives(SpriteBatch spriteBatch, Matrix transformMatrix)
-        {
-            DrawOutlineUsingPrimitives(spriteBatch.GraphicsDevice, transformMatrix);
-        }
-
-        public override void DrawOutlineThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix, int thickness = 1)
-        {
-            foreach (var side in Sides)
-                side.DrawThickUsingPrimitives(graphicsDevice, transformMatrix, thickness);
         }
     }
 }

@@ -2,18 +2,18 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace TiledRenderTest.Shapes
 {
-    public class Star : Polygon
+    public class Star : Shape
     {
         public int NumberOfPoints { get; private set; } = 5;
         public float OuterRadius { get; private set; } = 100; 
         public float InnerRadius { get; private set; } = 40;
-        public VertexPositionColor[] FilledVertices => CreateFilledStarVertices(Position, OuterRadius, InnerRadius, Color, NumberOfPoints);
-
-        public List<Triangle> Triangles { get; set; } = [];
+        public override VertexPositionColor[] FilledVertices => CreateFilledStarVertices(Position, OuterRadius, InnerRadius, Color, NumberOfPoints);
+        public new List<Triangle> Triangles { get; set; } = [];
 
         public Star(Vector2 center, int numbOfPoints = 5, int outerRadius = 100, int innerRadius = 40)
         {
@@ -22,7 +22,7 @@ namespace TiledRenderTest.Shapes
             InnerRadius = innerRadius;
             Position = center + new Vector2(OuterRadius, OuterRadius);
 
-            Points = CreateStarOutline(center, OuterRadius, InnerRadius, NumberOfPoints);
+            Points = CreateStarOutline(Position, OuterRadius, InnerRadius, NumberOfPoints);
             Triangulate();
         }
 
@@ -42,16 +42,7 @@ namespace TiledRenderTest.Shapes
             Triangulate();
         }
 
-        public override void Update(GameTime gameTime)
-        {
-            base.Update(gameTime);
-        }
-
-        public override void Draw(SpriteBatch spriteBatch, int outlineThickness = 1)
-        {
-            base.Draw(spriteBatch, outlineThickness);
-        }
-
+        /*
         public override void DrawFilledUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
             BasicEffect effect = new(graphicsDevice)
@@ -74,22 +65,7 @@ namespace TiledRenderTest.Shapes
                 );
             }
         }
-
-        public override void DrawOutline(SpriteBatch spriteBatch, int outlineThickness = 1)
-        {
-            base.DrawOutline(spriteBatch, outlineThickness);
-        }
-
-        public override void DrawOutlineUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix)
-        {
-            base.DrawOutlineUsingPrimitives(graphicsDevice, transformMatrix);
-        }
-
-        public override void DrawOutlineThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix, int thickness = 2)
-        {
-            foreach (var side in Sides)
-                side.DrawThickUsingPrimitives(graphicsDevice, transformMatrix, thickness);
-        }
+        */
 
         public static Vector2[] CreateStarOutline(Vector2 center, float outerRadius, float innerRadius, int numPoints = 5)
         {
@@ -150,6 +126,7 @@ namespace TiledRenderTest.Shapes
         {
             foreach (Triangle t in Triangles)
                 t.DrawOutline(spriteBatch, Color);
+
         }
 
         public void DrawStarOutLineWithTriangles(SpriteBatch spriteBatch, Color color)
@@ -175,11 +152,11 @@ namespace TiledRenderTest.Shapes
             }
         }
 
-        public void Triangulate()
+        public new void Triangulate()
         {
             Triangles.Clear();
 
-            Vector2[] points = CreateStarOutline(Position, OuterRadius, InnerRadius, NumberOfPoints);
+            Vector2[] points = Points;
 
             // Remove duplicate last point (the closing point)
             points = [.. points.Take(points.Length - 1)];

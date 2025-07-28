@@ -9,35 +9,18 @@ namespace TiledRenderTest.Shapes
         public int Width { get; set; } = 1;
         public int Height { get; set; } = 1;
 
-        public Vector2[] Points =>
-        [
-            Position,
-            new (Position.X + Width, Position.Y),
-            new (Position.X + Width, Position.Y + Height),
-            new (Position.X, Position.Y + Height),
-            Position
-        ];
-
-        public Line[] Sides => ToLines(Points, Color);
-        public VertexPositionColor[] Vertices => [.. Points.Select(corner => ToVertexPositionColor(corner, Color))];
-
-        public Rectangle(int x, int y, int width, int height) : base(new Vector2(x, y))
-        {
-            Width = width;
-            Height = height;
-        }
+        public Rectangle(int x, int y, int width, int height) :
+            this(new Vector2(x, y), width, height) { }
 
         public Rectangle(int x, int y, int width, int height, Color color)
-            : base(new(x,y), color)
-        {
-            Width = width;
-            Height = height;
-        }
+            : this(new(x, y), width, height, color) { }
 
-        public Rectangle(Vector2 position, int width, int height) : base(position)
+        public Rectangle(Vector2 position, int width, int height) 
+            : base(position)
         {
             Width = width;
             Height = height;
+            Initialize();
         }
 
         public Rectangle(Vector2 position, int width, int height, Color color)
@@ -45,14 +28,19 @@ namespace TiledRenderTest.Shapes
         {
             Width = width;
             Height = height;
+            Initialize();
         }
 
-        public Rectangle() : base()
+        private void Initialize()
         {
-        }
-
-        public override void Update(GameTime gameTime)
-        {
+            Points =
+            [
+                new Vector2(0, 0) + Position,              // Top-left
+                new Vector2(Width, 0) + Position,          // Top-right
+                new Vector2(Width, Height) + Position,     // Bottom-right
+                new Vector2(0, Height) + Position,         // Bottom-left
+                new Vector2(0, 0)  + Position              // Close the loop
+            ];
         }
 
         public override void Draw(SpriteBatch spriteBatch)
@@ -60,23 +48,7 @@ namespace TiledRenderTest.Shapes
             spriteBatch.Draw(Texture, Position, Color);
         }
 
-        public void DrawOutline(SpriteBatch spriteBatch, Color outlineColor, int outlineThickness = 1)
-        {
-            foreach (var side in Sides)
-            {
-                side.Draw(spriteBatch, outlineColor, outlineThickness);
-            }
-        }
-
-        public void DrawOutline(SpriteBatch spriteBatch, int outlineThickness = 1)
-        {
-            foreach (var side in Sides)
-            {
-                side.Thickness = outlineThickness;
-                side.Draw(spriteBatch);
-            }
-        }
-
+        /*
         public void DrawOutlineUsingPrimitives(SpriteBatch spriteBatch) //this stays fixed on the screen. If the camera moves this follows
         {
             GraphicsDevice graphicsDevice = spriteBatch.GraphicsDevice;
@@ -93,35 +65,6 @@ namespace TiledRenderTest.Shapes
                 graphicsDevice.DrawUserPrimitives(PrimitiveType.LineStrip, Vertices, 0, Vertices.Length - 1);
             }
         }
-
-        public override void DrawOutlineUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix)
-        {
-            BasicEffect basicEffect = new(graphicsDevice)
-            {
-                VertexColorEnabled = true,
-                View = transformMatrix,
-                Projection = Matrix.CreateOrthographicOffCenter(
-                    0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height, 0, 0, 1)
-            };
-
-            EffectTechnique effectTechnique = basicEffect.Techniques[0];
-            EffectPassCollection effectPassCollection = effectTechnique.Passes;
-            foreach (EffectPass pass in effectPassCollection)
-            {
-                pass.Apply();
-                graphicsDevice.DrawUserPrimitives(PrimitiveType.LineStrip, Vertices, 0, Vertices.Length - 1);
-            }
-        }
-
-        public override void DrawOutlineUsingPrimitives(SpriteBatch spriteBatch, Matrix transformMatrix)
-        {
-            DrawOutlineUsingPrimitives(spriteBatch.GraphicsDevice, transformMatrix);
-        }
-
-        public override void DrawOutlineThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix, int thickness = 2)
-        {
-            foreach (var side in Sides)
-                side.DrawThickUsingPrimitives(graphicsDevice, transformMatrix, thickness);
-        }
+        */
     }
 }
