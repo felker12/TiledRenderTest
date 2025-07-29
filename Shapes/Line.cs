@@ -67,7 +67,9 @@ namespace TiledRenderTest.Shapes
         {
             Position = position1;
             Position2 = position2;
-            isDirty = true; // Mark as dirty to rebuild vertices
+
+            //Mark as dirty to rebuild vertices
+            isDirty = true; 
             isDirty2 = true;
         }
 

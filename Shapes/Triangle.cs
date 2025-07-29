@@ -52,8 +52,7 @@ namespace TiledRenderTest.Shapes
 
         public override void DrawFilledUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
-            if (basicEffect is null)
-                InitializeBasicEffect(graphicsDevice, viewMatrix);
+            basicEffect ??= Line.InitializeBasicEffect(graphicsDevice, viewMatrix);
 
             foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
             {

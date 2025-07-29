@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using TiledRenderTest.Engine;
 using TiledRenderTest.Shapes;
 
@@ -40,8 +41,14 @@ namespace TiledRenderTest
         private TileMap tileMap;
         private TileMap DungeonMap;
 
+
+
         List<Shape> Shapes { get; set; } = [];
         public Random Random { get; set; } = new();
+
+        public double totalTime = 0f;
+        public int count = 0;   
+        public double AverageTime => count > 0 ? totalTime / count : 0;
 
         public Game1()
         {
@@ -107,7 +114,39 @@ namespace TiledRenderTest
             base.Update(gameTime);
 
             //Debug.WriteLine($"Player Position: {Player.Position}");
+
+            UpdateShapes(gameTime);
         }
+
+        public void UpdateShapes(GameTime gameTime)
+        {
+            Stopwatch stopwatch = new();
+            stopwatch.Start();
+
+            foreach (var shape in Shapes)
+                shape.Update(gameTime);
+
+            //var options = new ParallelOptions
+            //{
+            //    MaxDegreeOfParallelism = Environment.ProcessorCount / 2
+            //};
+
+            //Parallel.For(0, Shapes.Count, i =>
+            //{
+            //    Shapes[i].Update(gameTime);
+            //});
+
+
+            stopwatch.Stop();
+
+            Debug.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
+            totalTime += stopwatch.Elapsed.TotalMilliseconds;
+            count++;
+
+            Debug.WriteLine($"Average Time: {AverageTime} ms, Total Time: {totalTime}");
+        }
+
+
 
         protected override void Draw(GameTime gameTime)
         {
@@ -157,8 +196,8 @@ namespace TiledRenderTest
             //Circle2.DrawOutline(SpriteBatch);
             //Circle.DrawOutLineWithTriangles(SpriteBatch);
 
-            foreach(var shape in Shapes)
-                shape.DrawOutLineWithTriangles(SpriteBatch);
+            foreach (var shape in Shapes)
+                shape.DrawOutline(SpriteBatch);
 
             //Circle3.DrawOutLineWithTriangles(SpriteBatch);
 
@@ -219,7 +258,7 @@ namespace TiledRenderTest
                 }
                 */
 
-                Shapes.Add(new Star(position, Color.Aquamarine, Random.Next(3, 10), Random.Next(40, 80), Random.Next(20, 40)));
+                Shapes.Add(new Star(position, Color.Aquamarine, Random.Next(3, 10), Random.Next(40, 80), Random.Next(20, 40)) { Rotate = true });
 
             }
         }

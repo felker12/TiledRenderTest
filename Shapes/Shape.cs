@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,17 +20,21 @@ namespace TiledRenderTest.Shapes
         protected BasicEffect basicEffect;
         protected Vector2[] points;
         protected VertexPositionColor[] edgeVertices;
-        protected Texture2D texture;
+        protected Texture2D texture; 
+        readonly float rotationDegrees = MathHelper.ToRadians(1f); // Default rotation angle in radians
 
         public Vector2 Position { get; protected set; } = Vector2.Zero;
         public Color Color { get; protected set; } = Color.White; // Default color
         public Texture2D Texture { get { texture ??= Game1.CreateTextureFromColor(Color); return texture; } }
         public virtual Vector2 Center { get { RebuildIfDirty(); return center; } }
-        public virtual Vector2[] Points { get => points; protected set { points = value; MarkDirty(); } }
+        public virtual Vector2[] Points { 
+            get => points; 
+            protected set { points = value; MarkDirty(); } }
         public virtual Line[] Sides { get { RebuildIfDirty(); return sides; } }
         public virtual VertexPositionColor[] Vertices { get { RebuildIfDirty(); return edgeVertices; } }
         public virtual VertexPositionColor[] FilledVertices { get { RebuildIfDirty(); return filledVertices; } }
         public virtual Triangle[] Triangles { get { RebuildIfDirty(); return triangles; } }
+        public bool Rotate { get; set; } = false; // Default rotation state
 
         public Shape(Vector2 position, Color color)
         {
@@ -81,9 +86,45 @@ namespace TiledRenderTest.Shapes
 
         public virtual void Update(GameTime gameTime)
         {
-            // Default update logic, can be overridden by derived classes
-            // This method can be used to update the shape's state, position, etc.
-            throw new NotImplementedException("Update method must be implemented in derived classes.");
+            if (Rotate)
+            {
+                //PerformRotation(MathHelper.ToRadians(1f)); // Rotate by 1 degree each update
+                PerformRotation();
+            }
+
+        }
+
+        /*
+        public virtual void PerformRotation(float rotationAngle)
+        {
+            // Rotate each point around the center
+            for (int i = 0; i < points.Length; i++)
+            {
+                points[i] = Vector2.Transform(points[i] - Center, Matrix.CreateRotationZ(rotationAngle)) + Center;
+            }
+            MarkDirty();
+        }
+        */
+
+        public virtual void PerformRotation()
+        {
+            float sin = MathF.Sin(rotationDegrees);
+            float cos = MathF.Cos(rotationDegrees);
+            float centerX = Center.X;
+            float centerY = Center.Y;
+
+            // Rotate each point around the center
+            for (int i = 0; i < points.Length; i++)
+            {
+                //Points[i] = Vector2.Transform(Points[i] - Center, Matrix.CreateRotationZ(rotation)) + Center;
+                Points[i] = new Vector2(
+                    cos * (points[i].X - centerX) - sin * (points[i].Y - centerY) + centerX,
+                    sin * (points[i].X - centerX) + cos * (points[i].Y - centerY) + centerY
+                );
+
+            }
+
+            MarkDirty();
         }
 
         public virtual void Draw(SpriteBatch spriteBatch)
@@ -162,7 +203,7 @@ namespace TiledRenderTest.Shapes
 
         public virtual void DrawFilledUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
-            basicEffect ??= InitializeBasicEffect(graphicsDevice, viewMatrix);
+            basicEffect ??= Line.InitializeBasicEffect(graphicsDevice, viewMatrix);
 
             foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
             {
@@ -326,18 +367,6 @@ namespace TiledRenderTest.Shapes
             }
 
             return verts;
-        }
-
-        public static BasicEffect InitializeBasicEffect(GraphicsDevice graphicsDevice, Matrix viewMatrix)
-        {
-            return new(graphicsDevice)
-            {
-                VertexColorEnabled = true,
-                World = Matrix.Identity,
-                View = viewMatrix,
-                Projection = Matrix.CreateOrthographicOffCenter(
-                    0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height, 0, 0, 1)
-            };
         }
     }
 }
