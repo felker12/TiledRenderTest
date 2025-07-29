@@ -11,16 +11,25 @@ namespace TiledRenderTest.Shapes
 {
     public class Shape
     {
+        protected VertexPositionColor[] filledVertices;
+        protected Triangle[] triangles;
+        protected Line[] sides;
+        protected Vector2 center;
+        protected bool isDirty = true;
+        protected BasicEffect basicEffect;
+        protected Vector2[] points;
+        protected VertexPositionColor[] edgeVertices;
+        protected Texture2D texture;
+
         public Vector2 Position { get; protected set; } = Vector2.Zero;
         public Color Color { get; protected set; } = Color.White; // Default color
-        public Texture2D Texture => Game1.CreateTextureFromColor(Color);
-        public virtual Vector2[] Points { get; set; }
-        public Line[] Sides => ToLines(Points, Color);
-        public virtual VertexPositionColor[] Vertices => [.. Points.Select(corner => ToVertexPositionColor(corner, Color))];
-        public virtual VertexPositionColor[] FilledVertices => GenerateFilledVertices();
-        public virtual Triangle[] Triangles => Triangulate();
-
-        public virtual Vector2 Center => GetCentroid(Points);
+        public Texture2D Texture { get { texture ??= Game1.CreateTextureFromColor(Color); return texture; } }
+        public virtual Vector2 Center { get { RebuildIfDirty(); return center; } }
+        public virtual Vector2[] Points { get => points; protected set { points = value; MarkDirty(); } }
+        public virtual Line[] Sides { get { RebuildIfDirty(); return sides; } }
+        public virtual VertexPositionColor[] Vertices { get { RebuildIfDirty(); return edgeVertices; } }
+        public virtual VertexPositionColor[] FilledVertices { get { RebuildIfDirty(); return filledVertices; } }
+        public virtual Triangle[] Triangles { get { RebuildIfDirty(); return triangles; } }
 
         public Shape(Vector2 position, Color color)
         {
@@ -40,6 +49,34 @@ namespace TiledRenderTest.Shapes
 
         public Shape()
         {
+        }
+
+        public void MarkDirty()
+        {
+            isDirty = true;
+        }
+
+        protected virtual void RebuildIfDirty()
+        {
+            if (!isDirty || points == null || points.Length == 0) return;
+
+            center = GetCentroid(points);
+            triangles = Triangulate(points, center);
+            filledVertices = GenerateFilledVertices(triangles);
+            sides = ToLines(points, Color);
+            edgeVertices = [.. points.Select(p => ToVertexPositionColor(p, Color))];
+
+            isDirty = false;
+        }
+
+        protected void ClearCache()
+        {
+            edgeVertices = null;
+            filledVertices = null;
+            triangles = null;
+            sides = null;
+
+            MarkDirty();
         }
 
         public virtual void Update(GameTime gameTime)
@@ -66,8 +103,7 @@ namespace TiledRenderTest.Shapes
         {
             foreach (var side in Sides)
             {
-                side.Thickness = outlineThickness;
-                side.Draw(spriteBatch);
+                side.Draw(spriteBatch, outlineThickness);
             }
         }
 
@@ -88,12 +124,31 @@ namespace TiledRenderTest.Shapes
                 t.DrawOutline(spriteBatch, color);
         }
 
+        public virtual void DrawOutLineThickWithTriangles(SpriteBatch spriteBatch, Color color, int outlineThickness = 2)
+        {
+            foreach (Triangle t in Triangles)
+                t.DrawOutline(spriteBatch, color, outlineThickness);
+        }
+
+        public virtual void DrawOutLineThickWithTriangles(SpriteBatch spriteBatch, int outlineThickness = 2)
+        {
+            foreach (Triangle t in Triangles)
+                t.DrawOutline(spriteBatch, Color, outlineThickness);
+        }
 
         public virtual void DrawOutlineWithTrianglesUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
             foreach (Triangle t in Triangles)
             {
                 t.DrawOutlineUsingPrimitives(graphicsDevice, viewMatrix);
+            }
+        }
+
+        public virtual void DrawOutlineThickWithTrianglesUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
+        {
+            foreach (Triangle t in Triangles)
+            {
+                t.DrawOutlineThickUsingPrimitives(graphicsDevice, viewMatrix);
             }
         }
 
@@ -107,16 +162,9 @@ namespace TiledRenderTest.Shapes
 
         public virtual void DrawFilledUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
-            BasicEffect effect = new(graphicsDevice)
-            {
-                VertexColorEnabled = true,
-                World = Matrix.Identity,
-                View = viewMatrix,
-                Projection = Matrix.CreateOrthographicOffCenter(
-                    0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height, 0, 0, 1)
-            };
+            basicEffect ??= InitializeBasicEffect(graphicsDevice, viewMatrix);
 
-            foreach (EffectPass pass in effect.CurrentTechnique.Passes)
+            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
             {
                 pass.Apply();
                 graphicsDevice.DrawUserPrimitives(
@@ -132,7 +180,7 @@ namespace TiledRenderTest.Shapes
         {
             foreach (var side in Sides)
             {
-                side.DrawUsingPrimitives(graphicsDevice, transformMatrix);
+                side.DrawUsingPrimitives(graphicsDevice, transformMatrix, basicEffect);
             }
         }
 
@@ -144,7 +192,7 @@ namespace TiledRenderTest.Shapes
         public virtual void DrawOutlineThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix, int thickness = 1)
         {
             foreach (var side in Sides)
-                side.DrawThickUsingPrimitives(graphicsDevice, transformMatrix, thickness);
+                side.DrawThickUsingPrimitives(graphicsDevice, transformMatrix, basicEffect, thickness);
         }
 
         public static Vector3 ToVector3(Vector2 vector)
@@ -166,29 +214,6 @@ namespace TiledRenderTest.Shapes
         {
             return ToLines(vectors.ToArray(), color);
         }
-
-        /*
-        public Triangle[] Triangulate(Vector2[] vectors, Vector2 center)
-        {
-            Triangle[] triangles = new Triangle[vectors.Length];
-
-            Vector2[] points = vectors;
-            //bool isClosed = vectors[0] == vectors[^1];
-            // Remove duplicate last point (the closing point)
-            points = [.. points.Take(points.Length - 1)];
-
-            for (int i = 0; i < points.Length; i++)
-            {
-                Vector2 p1 = points[i];
-                Vector2 p2 = points[(i + 1) % points.Length];
-
-                // Create triangle from center to edge pair
-                triangles[i] = new(center, p1, p2, Color);
-            }
-
-            return triangles;
-        }
-        */
 
         public Triangle[] Triangulate(Vector2[] vectors, Vector2 center)
         {
@@ -284,6 +309,35 @@ namespace TiledRenderTest.Shapes
             }
 
             return verts;
+        }
+
+        public virtual VertexPositionColor[] GenerateFilledVertices(Triangle[] triangles)
+        {
+            if (triangles == null || triangles.Length == 0) return [];
+
+            var verts = new VertexPositionColor[triangles.Length * 3];
+
+            for (int i = 0, v = 0; i < triangles.Length; i++, v += 3)
+            {
+                var t = triangles[i];
+                verts[v] = ToVertexPositionColor(t.Position, Color);
+                verts[v + 1] = ToVertexPositionColor(t.Position2, Color);
+                verts[v + 2] = ToVertexPositionColor(t.Position3, Color);
+            }
+
+            return verts;
+        }
+
+        public static BasicEffect InitializeBasicEffect(GraphicsDevice graphicsDevice, Matrix viewMatrix)
+        {
+            return new(graphicsDevice)
+            {
+                VertexColorEnabled = true,
+                World = Matrix.Identity,
+                View = viewMatrix,
+                Projection = Matrix.CreateOrthographicOffCenter(
+                    0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height, 0, 0, 1)
+            };
         }
     }
 }

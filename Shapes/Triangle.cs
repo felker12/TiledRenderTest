@@ -10,17 +10,22 @@ namespace TiledRenderTest.Shapes
 {
     public class Triangle : Shape
     {
-        public Vector2 Position2 { get; set; } = new(50, 50);
-        public Vector2 Position3 { get; set; } = new(0, 50);
-        public override Vector2[] Points => [Position, Position2, Position3, Position];
+        public Vector2 Position2 { get; protected set; } = new(50, 50);
+        public Vector2 Position3 { get; protected set; } = new(0, 50);
+        public override Vector2[] Points { get => points; protected set { points = value; MarkDirty(); } }
 
-        public Triangle() : base() { }
+        public Triangle() : base()
+        {
+            SetTrianglePoints();
+        }
 
         public Triangle(Vector2 position, Vector2 position2, Vector2 position3, Color color) :
             base(position, color)
         {
             Position2 = position2;
             Position3 = position3;
+
+            SetTrianglePoints();
         }
 
         public Triangle(Vector2 position, Vector2 position2, Vector2 position3) :
@@ -28,20 +33,27 @@ namespace TiledRenderTest.Shapes
         {
             Position2 = position2;
             Position3 = position3;
+
+            SetTrianglePoints();
+        }
+
+        private void SetTrianglePoints()
+        {
+            points = [Position, Position2, Position3, Position];
+        }
+
+        public void UpdatePositions(Vector2 position, Vector2 position2, Vector2 position3)
+        {
+            Position = position;
+            Position2 = position2;
+            Position3 = position3;
+            SetTrianglePoints();
         }
 
         public override void DrawFilledUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
-            BasicEffect basicEffect = new(graphicsDevice)
-            {
-                VertexColorEnabled = true,
-                World = Matrix.Identity,
-                View = viewMatrix,
-                Projection = Matrix.CreateOrthographicOffCenter(
-                    0, graphicsDevice.Viewport.Width,
-                    graphicsDevice.Viewport.Height, 0,
-                    0, 1)
-            };
+            if (basicEffect is null)
+                InitializeBasicEffect(graphicsDevice, viewMatrix);
 
             foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
             {
