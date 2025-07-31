@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,31 +12,50 @@ namespace TiledRenderTest.Shapes
     public class Line
     {
         Vector2 distance;
+        Vector2 normalizedDirection, normal;
         bool isDirty = true, isDirty2 = true;
-        Texture2D texture;
-        VertexPositionColor[] vertices;
+        VertexPositionColor[] vertices, thickVertices;
+        float angle, length;
 
         public Vector2 Position { get;  private set; } = Vector2.Zero;
         public Vector2 Position2 { get; private set; } = Vector2.Zero;
         public Color Color { get; set; } = Color.White; // Default color
-        public Texture2D Texture { get { texture ??= Game1.CreateTextureFromColor(Color); return texture; } }
         public VertexPositionColor[] Vertices { get { RebuildIfDirty(); return vertices; } }
-        public VertexPositionColor[] ThickVertices { get; private set; }
+        public VertexPositionColor[] ThickVertices { get { RebuildThickVertices(); return thickVertices; } }
         public Vector2 Distance { get { RebuildIfDirty(); return distance; } }
+        public float Angle { get { RebuildIfDirty(); return angle; } }
+        public float Length { get { RebuildIfDirty(); return length; } }
 
         protected virtual void RebuildIfDirty()
         {
-            distance = Position2 - Position;
+            if (isDirty is false)
+                return;
+
+            distance = Position2 - Position; 
+            angle = (float)Math.Atan2(distance.Y, distance.X);
+            length = distance.Length();
+
             vertices = [
                 new VertexPositionColor(new Vector3(Position, 0f), Color),
                 new VertexPositionColor(new Vector3(Position2, 0f), Color)];
 
+
             isDirty = false;
         }
 
-        private void RebuildThickVertices(int thickness)
+        private void RebuildThickVertices(int thickness = 2)
         {
-            ThickVertices = GetThickLineVertices(Position, Position2, thickness, Color);
+            if (isDirty2 is false)
+                return;
+
+            distance = Position2 - Position;
+
+            if (distance != Vector2.Zero)
+            {
+                normalizedDirection = Vector2.Normalize(distance);
+                normal = new Vector2(-normalizedDirection.Y, normalizedDirection.X);
+            }
+            thickVertices = GetThickLineVertices(Position, Position2, thickness, Color);
             isDirty2 = false;
         }
 
@@ -73,25 +93,20 @@ namespace TiledRenderTest.Shapes
             isDirty2 = true;
         }
 
-        public void Draw(SpriteBatch spriteBatch, int thickness = 1)
+        public void Draw(SpriteBatch spriteBatch, Texture2D texture, int thickness = 1)
         {
-            Vector2 distance = Distance;
-            float angle = (float)Math.Atan2(distance.Y, distance.X); // Calculate angle in radians
-            float length = distance.Length();
-            spriteBatch.Draw(Texture, Position, null, Color, angle, Vector2.Zero, new Vector2(length, thickness), SpriteEffects.None, 0f);
+            spriteBatch.Draw(texture, Position, null, Color, Angle, Vector2.Zero, new Vector2(Length, thickness), SpriteEffects.None, 0f);
+
         }
 
-        public void Draw(SpriteBatch spriteBatch, Color color, int thickness)
+        public void Draw(SpriteBatch spriteBatch, Texture2D texture, Color color, int thickness = 1)
         {
-            Vector2 distance = Distance;
-            float angle = (float)Math.Atan2(distance.Y, distance.X); // Calculate angle in radians
-            float length = distance.Length();
-            spriteBatch.Draw(Texture, Position, null, color, angle, Vector2.Zero, new Vector2(length, thickness), SpriteEffects.None, 0f);
+            spriteBatch.Draw(texture, Position, null, color, Angle, Vector2.Zero, new Vector2(Length, thickness), SpriteEffects.None, 0f);
         }
 
         public void DrawUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix, BasicEffect basicEffect)
         {
-            basicEffect ??= InitializeBasicEffect(graphicsDevice, transformMatrix);
+            basicEffect ??= Shape.InitializeBasicEffect(graphicsDevice, transformMatrix);
 
             EffectTechnique effectTechnique = basicEffect.Techniques[0];
             EffectPassCollection effectPassCollection = effectTechnique.Passes;
@@ -109,10 +124,10 @@ namespace TiledRenderTest.Shapes
 
         public void DrawThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix, BasicEffect basicEffect, int thickness)
         {
-            if(isDirty2 = true || ThickVertices is null)
+            if(isDirty2 || ThickVertices is null)
                 RebuildThickVertices(thickness);
 
-            basicEffect ??= InitializeBasicEffect(graphicsDevice, transformMatrix);
+            basicEffect ??= Shape.InitializeBasicEffect(graphicsDevice, transformMatrix);
 
             foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
             {
@@ -126,12 +141,9 @@ namespace TiledRenderTest.Shapes
             return $"Position: {Position}, Position2 {Position2}, Distance: {Distance}";
         }
 
-        public static VertexPositionColor[] GetThickLineVertices(Vector2 a, Vector2 b, float thickness, Color color)
+        public VertexPositionColor[] GetThickLineVertices(Vector2 a, Vector2 b, float thickness, Color color)
         {
-            Vector2 direction = b - a;
-            Vector2 normal = Vector2.Normalize(new Vector2(-direction.Y, direction.X)); // Perpendicular
-
-            Vector2 offset = normal * (thickness / 2f);
+            Vector2 offset = this.normal * (thickness / 2f);
 
             // Four corners of the quad
             Vector2 a1 = a + offset;
@@ -151,18 +163,6 @@ namespace TiledRenderTest.Shapes
                 new VertexPositionColor(new Vector3(a2, 0), color),
                 new VertexPositionColor(new Vector3(b2, 0), color),
             ];
-        }
-
-        public static BasicEffect InitializeBasicEffect(GraphicsDevice graphicsDevice, Matrix viewMatrix)
-        {
-            return new(graphicsDevice)
-            {
-                VertexColorEnabled = true,
-                World = Matrix.Identity,
-                View = viewMatrix,
-                Projection = Matrix.CreateOrthographicOffCenter(
-                    0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height, 0, 0, 1)
-            };
         }
     }
 }

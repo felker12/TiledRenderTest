@@ -12,7 +12,6 @@ namespace TiledRenderTest.Shapes
         public int NumberOfPoints { get; private set; } = 5;
         public float OuterRadius { get; private set; } = 100; 
         public float InnerRadius { get; private set; } = 40;
-        public override VertexPositionColor[] FilledVertices => CreateFilledStarVertices(Position, OuterRadius, InnerRadius, Color, NumberOfPoints);
 
         public Star(Vector2 center, int numbOfPoints = 5, int outerRadius = 100, int innerRadius = 40)
         {
@@ -59,38 +58,6 @@ namespace TiledRenderTest.Shapes
             points[^1] = points[0]; //the last point should be the same as the first
 
             return points;
-        }
-
-        public static VertexPositionColor[] CreateFilledStarVertices(Vector2 center, float outerRadius, float innerRadius, Color color, int numPoints = 5)
-        {
-            List<VertexPositionColor> vertices = [];
-
-            float angleStep = MathF.PI / numPoints;
-            float currentAngle = -MathF.PI / 2f; // Start at top
-
-            Vector2[] points = new Vector2[numPoints * 2];
-            for (int i = 0; i < points.Length; i++)
-            {
-                float radius = (i % 2 == 0) ? outerRadius : innerRadius;
-                points[i] = new Vector2(
-                    center.X + MathF.Cos(currentAngle) * radius,
-                    center.Y + MathF.Sin(currentAngle) * radius
-                );
-                currentAngle += angleStep;
-            }
-
-            // Build triangles from center to each edge pair (triangle fan style)
-            for (int i = 0; i < points.Length; i++)
-            {
-                Vector2 p1 = points[i];
-                Vector2 p2 = points[(i + 1) % points.Length];
-
-                vertices.Add(new VertexPositionColor(new Vector3(center, 0), color));
-                vertices.Add(new VertexPositionColor(new Vector3(p1, 0), color));
-                vertices.Add(new VertexPositionColor(new Vector3(p2, 0), color));
-            }
-
-            return [.. vertices];
         }
     }
 }

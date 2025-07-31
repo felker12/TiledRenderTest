@@ -1,10 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TiledRenderTest.Shapes
 {
@@ -52,14 +47,14 @@ namespace TiledRenderTest.Shapes
 
         public override void DrawFilledUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
-            basicEffect ??= Line.InitializeBasicEffect(graphicsDevice, viewMatrix);
+            basicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
 
             foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
             {
                 pass.Apply();
                 graphicsDevice.DrawUserPrimitives(
                     PrimitiveType.TriangleList,
-                    Vertices,
+                    PerimeterVertices,
                     0,
                     1 // one triangle = 1 primitive
                 );
