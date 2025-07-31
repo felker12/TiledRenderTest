@@ -24,23 +24,18 @@ namespace TiledRenderTest.Shapes
             triangleVertices;
         protected Texture2D texture;
         protected float currentRotation = 0f; // Track current rotation angle
+        protected Color color = Color.White;
 
-        public float RotationSpeedDegreesPerSecond { get; private set; } = 90f;
+        public float RotationSpeedDegreesPerSecond { get; set; } = 90f;
         public Vector2 Position { get; protected set; } = Vector2.Zero;
-        public Color Color { get; protected set; } = Color.White; // Default color
+        public Color Color { get => color;  protected set { color = value; MarkDirty(); } } // Default color
         public Texture2D Texture { get { texture ??= Game1.CreateTextureFromColor(Color); return texture; } }
         public virtual Vector2 Center { get { RebuildIfDirty(); return center; } }
-        public virtual Vector2[] Points
-        {
-            get => points;
-            protected set { points = value; rotationPoints = null; MarkDirty(); }
-        }
+        public virtual Vector2[] Points { get => points; protected set { points = value; MarkDirty(); } }
         public virtual Line[] Lines { get { RebuildIfDirty(); return sides; } }
         public virtual VertexPositionColor[] PerimeterVertices { get { RebuildIfDirty(); return edgeVertices; } }
         public virtual VertexPositionColor[] FilledVertices { get { RebuildIfDirty(); return filledVertices; } }
         public virtual VertexPositionColor[] TriangleVertices { get { RebuildIfDirty(); return triangleVertices; } }
-
-        // New properties for index-based triangulation
         public virtual int[] TriangleIndices { get { RebuildIfDirty(); return triangleIndices; } }
         public virtual int TriangleCount { get { RebuildIfDirty(); return triangleIndices?.Length / 3 ?? 0; } }
         public virtual int[] TriangulationLineIndices { get { RebuildIfDirty(); return triangulationLineIndices; } }
@@ -113,7 +108,7 @@ namespace TiledRenderTest.Shapes
 
             // Generate triangulation line indices for wireframe triangulation
             triangulationLineIndices = GenerateTriangulationLineIndices(points);
-            triangleVertices = GenerateTriangulationVerticesFromIndices(points, triangulationLineIndices);
+            triangleVertices = GenerateTriangulationVerticesFromIndices(points, triangulationLineIndices); //used when drawing outline with triangles
 
             isDirty = false;
         }
@@ -306,12 +301,74 @@ namespace TiledRenderTest.Shapes
             DrawOutline(spriteBatch, Color);
         }
 
-        public virtual void DrawOutLineWithTriangles(SpriteBatch spriteBatch)
+        public virtual void DrawFilled(SpriteBatch spriteBatch)
         {
-            DrawOutLineWithTriangles(spriteBatch, Color);
+            DrawFilled(spriteBatch, Color);
         }
 
-        public virtual void DrawOutLineWithTriangles(SpriteBatch spriteBatch, Color color)
+        public virtual void DrawFilled(SpriteBatch spriteBatch, Color fillColor)
+        {
+            var vertices = FilledVertices;
+            if (vertices == null || vertices.Length == 0) return;
+
+            Dictionary<int, List<Edge>> edgeTable = [];
+            int yMin = int.MaxValue, yMax = int.MinValue;
+
+            // Build the edge table from triangle vertices
+            for (int i = 0; i < vertices.Length; i += 3)
+            {
+                if (i + 2 >= vertices.Length) break;
+
+                var p1 = vertices[i].Position;
+                var p2 = vertices[i + 1].Position;
+                var p3 = vertices[i + 2].Position;
+
+                InsertEdge(edgeTable, p1, p2);
+                InsertEdge(edgeTable, p2, p3);
+                InsertEdge(edgeTable, p3, p1);
+
+                yMin = Math.Min(yMin, (int)MathF.Floor(MathF.Min(p1.Y, MathF.Min(p2.Y, p3.Y))));
+                yMax = Math.Max(yMax, (int)MathF.Ceiling(MathF.Max(p1.Y, MathF.Max(p2.Y, p3.Y))));
+            }
+
+            List<Edge> activeEdges = [];
+
+            for (int y = yMin; y < yMax; y++)
+            {
+                if (edgeTable.TryGetValue(y, out var newEdges))
+                    activeEdges.AddRange(newEdges);
+
+                activeEdges.RemoveAll(e => e.yMax <= y);
+                activeEdges.Sort((a, b) => a.x.CompareTo(b.x));
+
+                for (int i = 0; i < activeEdges.Count - 1; i += 2)
+                {
+                    float xStart = activeEdges[i].x;
+                    float xEnd = activeEdges[i + 1].x;
+
+                    int startX = (int)MathF.Floor(xStart);
+                    int endX = (int)MathF.Ceiling(xEnd);
+                    int width = Math.Max(1, endX - startX);
+
+                    spriteBatch.Draw(Texture, new Microsoft.Xna.Framework.Rectangle(startX, y, width, 1), fillColor);
+                }
+
+                for (int i = 0; i < activeEdges.Count; i++)
+                {
+                    var edge = activeEdges[i];
+                    edge.x += edge.inverseSlope;
+                    activeEdges[i] = edge;
+                }
+            }
+        }
+
+
+        public virtual void DrawOutlineWithTriangles(SpriteBatch spriteBatch)
+        {
+            DrawOutlineWithTriangles(spriteBatch, Color);
+        }
+
+        public virtual void DrawOutlineWithTriangles(SpriteBatch spriteBatch, Color color)
         {
             // Draw triangulation lines using the triangulation vertices
             for (int i = 0; i < TriangleVertices.Length; i += 2)
@@ -454,6 +511,28 @@ namespace TiledRenderTest.Shapes
                 Projection = Matrix.CreateOrthographicOffCenter(
                     0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height, 0, 0, 1)
             };
+        }
+
+        private static void InsertEdge(Dictionary<int, List<Edge>> edgeTable, Vector3 p1, Vector3 p2)
+        {
+            if (p1.Y == p2.Y) return; // skip horizontal edges
+
+            if (p1.Y > p2.Y)
+                (p1, p2) = (p2, p1);
+
+            float dx = p2.X - p1.X;
+            float dy = p2.Y - p1.Y;
+            float invSlope = dx / dy;
+
+            int yStart = (int)MathF.Ceiling(p1.Y);
+            int yEnd = (int)MathF.Ceiling(p2.Y);
+
+            float xStart = p1.X + invSlope * (yStart - p1.Y); // interpolate x at yStart
+
+            if (!edgeTable.TryGetValue(yStart, out var list))
+                edgeTable[yStart] = list = [];
+
+            list.Add(new Edge(xStart, invSlope, yEnd));
         }
     }
 }

@@ -32,7 +32,7 @@ namespace TiledRenderTest
         public Circle Circle3 { get; set; } = new(new(200, 200), 300, 50, Color.Aquamarine);
         public Circle Circle4 { get; set; } = new(new(-150, 200), 100, 12, Color.Crimson) { Rotate = true };
         public Polygon Polygon { get; set; } = new();
-        public Triangle Triangle { get; set; } =new(new(0,0), new(200,200), new(0,200));
+        public Triangle Triangle { get; set; } = new(new(0,0), new(200,200), new(0,200));
         internal List<TileMap> Maps { get; set; } = [];
 
         private TileMap tileMap;
@@ -119,15 +119,15 @@ namespace TiledRenderTest
 
         public void UpdateShapes(GameTime gameTime)
         {
-            Stopwatch stopwatch = new();
-            stopwatch.Start();
+            //Stopwatch stopwatch = new();
+            //stopwatch.Start();
 
             foreach (var shape in Shapes)
             {
                 shape.Update(gameTime);
             }
             Star.Update(gameTime);
-            //Triangle.Update(gameTime);
+            Triangle.Update(gameTime);
             //Rectangle.Update(gameTime);
             Circle4.Update(gameTime);
 
@@ -142,11 +142,11 @@ namespace TiledRenderTest
             //});
 
 
-            stopwatch.Stop();
+            //stopwatch.Stop();
 
-            Debug.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
-            totalTime += stopwatch.Elapsed.TotalMilliseconds;
-            count++;
+            //Debug.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
+            //totalTime += stopwatch.Elapsed.TotalMilliseconds;
+            //count++;
 
             //Debug.WriteLine($"Average Time: {AverageTime} ms, Total Time: {totalTime}");
         }
@@ -189,9 +189,10 @@ namespace TiledRenderTest
             //Star.DrawOutline(SpriteBatch);
             //Polygon.DrawOutline(SpriteBatch, 2);
 
-
-            //Triangle.DrawOutline(SpriteBatch);
-            Circle4.DrawOutLineWithTriangles(SpriteBatch);
+            Triangle.DrawOutline(SpriteBatch);
+            Circle4.DrawOutlineWithTriangles(SpriteBatch);
+            
+            //Circle4.DrawFilled(SpriteBatch, Color.Blue);
 
             //Star.DrawOutLineWithTriangles(SpriteBatch);
             //Star.DrawOutLineWithTriangles(SpriteBatch);
@@ -201,14 +202,15 @@ namespace TiledRenderTest
             //Circle.DrawOutline(SpriteBatch);
             //Circle2.DrawOutline(SpriteBatch);
             //Circle2.DrawOutlineWithTrianglesUsingPrimitives(GraphicsDevice, Camera.Transformation);
-            Circle.DrawOutLineWithTriangles(SpriteBatch);
+            //Circle.DrawOutLineWithTriangles(SpriteBatch);
 
             
             foreach (var shape in Shapes)
             {
                 //shape.TestDraw(SpriteBatch);
                 //shape.DrawOutline(SpriteBatch);
-                shape.DrawOutLineWithTriangles(SpriteBatch);
+                //shape.DrawOutLineWithTriangles(SpriteBatch);
+                //shape.DrawFilled(SpriteBatch);
             }
 
 
@@ -218,11 +220,9 @@ namespace TiledRenderTest
 
             foreach (var shape in Shapes)
             {
-                //shape.DrawOutlineWithTrianglesUsingPrimitives(GraphicsDevice, Camera.Transformation);
+                shape.DrawOutlineWithTrianglesUsingPrimitives(GraphicsDevice, Camera.Transformation);
                 //shape.DrawFilledUsingPrimitives(GraphicsDevice, Camera.Transformation);
                 //shape.DrawOutlineUsingPrimitives(GraphicsDevice, Camera.Transformation);
-                //shape.DrawOutlineWithTrianglesUsingPrimitives(GraphicsDevice, Camera.Transformation);
-                //shape.DrawOutlineWithTrianglesUsingPrimitives(GraphicsDevice, Camera.Transformation);
             }
 
             //Circle3.DrawFilledUsingPrimitives(GraphicsDevice, Camera.Transformation);
@@ -263,14 +263,24 @@ namespace TiledRenderTest
             Random = new Random();
             Shapes.Clear();
 
-            float x;
-            float y;
+            float x, y;
+            int r, g, b, alpha;
             Vector2 position;
+            Color color;
+            int speed;
 
-            for(int i = 0; i < 20; i++)
+            for (int i = 0; i < 20; i++)
             {
                 x = Random.Next(-400, 400);
                 y = Random.Next(-400, 400);
+
+                r = Random.Next(0, 256);
+                g = Random.Next(0, 256);
+                b = Random.Next(0, 256);
+                alpha = Random.Next(150, 256);
+                speed = Random.Next(60, 151);
+
+                color = new(r, g, b, alpha);
                 position = new(x, y);
                 /*
                 if (Random.Next(0, 2) == 0)
@@ -283,7 +293,20 @@ namespace TiledRenderTest
                 }
                 */
 
-                Shapes.Add(new Star(position, Color.Aquamarine, Random.Next(3, 10), Random.Next(70, 150), Random.Next(40, 70)) { Rotate = true });
+                //Shapes.Add(new Star(position, color, Random.Next(3, 10), Random.Next(70, 150), Random.Next(40, 70))
+                //{
+                //    Rotate = true,
+                //    RotationSpeedDegreesPerSecond = speed,
+                //});
+
+                Shapes.Add(new
+                    Triangle(position,
+                    position + new Vector2(0, 100), 
+                    position + new Vector2(50, 0))
+                {
+                    Rotate = true,
+                    RotationSpeedDegreesPerSecond = speed,
+                });
             }
         }
     }
