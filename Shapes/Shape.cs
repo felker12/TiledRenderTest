@@ -2,13 +2,12 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 
 namespace TiledRenderTest.Shapes
 {
     public class Shape
     {
+        //The fields should only be set through rebuilding methods (in this case RebuildIfDirty())
         // Index-based triangulation data
         protected int[] triangleIndices; // Every 3 indices form a triangle
         protected int[] triangulationLineIndices; // Indices for drawing triangulation lines
@@ -39,7 +38,6 @@ namespace TiledRenderTest.Shapes
         public virtual int[] TriangleIndices { get { RebuildIfDirty(); return triangleIndices; } }
         public virtual int TriangleCount { get { RebuildIfDirty(); return triangleIndices?.Length / 3 ?? 0; } }
         public virtual int[] TriangulationLineIndices { get { RebuildIfDirty(); return triangulationLineIndices; } }
-
         public bool Rotate { get; set; } = false; // Default rotation state
 
         public Shape(Vector2 position, Color color)
@@ -60,6 +58,282 @@ namespace TiledRenderTest.Shapes
 
         public Shape()
         {
+        }
+
+        public virtual void Update(GameTime gameTime)
+        {
+            if (Rotate)
+            {
+                PerformRotation(gameTime);
+            }
+        }
+
+        public virtual void PerformRotation(GameTime gameTime)
+        {
+            if (rotationPoints == null || rotationPoints.Length == 0) return;
+
+            float rotationStepRadians = MathHelper.ToRadians(RotationSpeedDegreesPerSecond) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            float sin = MathF.Sin(rotationStepRadians);
+            float cos = MathF.Cos(rotationStepRadians);
+
+            // Rotate each point around the center by delta angle
+            for (int i = 0; i < rotationPoints.Length; i++)
+            {
+                Vector2 p = points[i] - center; // current relative to center
+
+                points[i] = new Vector2(
+                    cos * p.X - sin * p.Y + center.X,
+                    sin * p.X + cos * p.Y + center.Y
+                );
+            }
+
+            MarkDirty();
+        }
+
+        //SpriteBatch methods for drawing
+        public virtual void Draw(SpriteBatch spriteBatch)
+        {
+            DrawOutline(spriteBatch);
+        }
+
+        public virtual void DrawOutline(SpriteBatch spriteBatch, Color outlineColor, int outlineThickness = 1)
+        {
+            foreach (var line in Lines)
+                line.Draw(spriteBatch, Texture, outlineColor, outlineThickness);
+        }
+
+        public virtual void DrawOutline(SpriteBatch spriteBatch, int outlineThickness = 1)
+        {
+            DrawOutline(spriteBatch, Color, outlineThickness);
+        }
+
+        public virtual void DrawOutline(SpriteBatch spriteBatch)
+        {
+            DrawOutline(spriteBatch, Color);
+        }
+
+        public virtual void DrawFilled(SpriteBatch spriteBatch)
+        {
+            DrawFilled(spriteBatch, Color);
+        }
+
+        public virtual void DrawFilled(SpriteBatch spriteBatch, Color fillColor)
+        {
+            var vertices = FilledVertices;
+            if (vertices == null || vertices.Length == 0) return;
+
+            Dictionary<int, List<Edge>> edgeTable = [];
+            int yMin = int.MaxValue, yMax = int.MinValue;
+
+            // Build the edge table from triangle vertices
+            for (int i = 0; i < vertices.Length; i += 3)
+            {
+                if (i + 2 >= vertices.Length) break;
+
+                var p1 = vertices[i].Position;
+                var p2 = vertices[i + 1].Position;
+                var p3 = vertices[i + 2].Position;
+
+                InsertEdge(edgeTable, p1, p2);
+                InsertEdge(edgeTable, p2, p3);
+                InsertEdge(edgeTable, p3, p1);
+
+                yMin = Math.Min(yMin, (int)MathF.Floor(MathF.Min(p1.Y, MathF.Min(p2.Y, p3.Y))));
+                yMax = Math.Max(yMax, (int)MathF.Ceiling(MathF.Max(p1.Y, MathF.Max(p2.Y, p3.Y))));
+            }
+
+            List<Edge> activeEdges = [];
+
+            for (int y = yMin; y < yMax; y++)
+            {
+                if (edgeTable.TryGetValue(y, out var newEdges))
+                    activeEdges.AddRange(newEdges);
+
+                activeEdges.RemoveAll(e => e.yMax <= y);
+                activeEdges.Sort((a, b) => a.x.CompareTo(b.x));
+
+                for (int i = 0; i < activeEdges.Count - 1; i += 2)
+                {
+                    float xStart = activeEdges[i].x;
+                    float xEnd = activeEdges[i + 1].x;
+
+                    int startX = (int)MathF.Floor(xStart);
+                    int endX = (int)MathF.Ceiling(xEnd);
+                    int width = Math.Max(1, endX - startX);
+
+                    spriteBatch.Draw(Texture, new Microsoft.Xna.Framework.Rectangle(startX, y, width, 1), fillColor);
+                }
+
+                for (int i = 0; i < activeEdges.Count; i++)
+                {
+                    var edge = activeEdges[i];
+                    edge.x += edge.inverseSlope;
+                    activeEdges[i] = edge;
+                }
+            }
+        }
+
+        public virtual void DrawTriangulated(SpriteBatch spriteBatch)
+        {
+            DrawTriangulated(spriteBatch, Color);
+        }
+
+        public virtual void DrawTriangulated(SpriteBatch spriteBatch, Color color)
+        {
+            // Draw triangulation lines using the triangulation vertices
+            for (int i = 0; i < TriangleVertices.Length; i += 2)
+            {
+                if (i + 1 < TriangleVertices.Length)
+                {
+                    var line = new Line(
+                        new Vector2(TriangleVertices[i].Position.X, TriangleVertices[i].Position.Y),
+                        new Vector2(TriangleVertices[i + 1].Position.X, TriangleVertices[i + 1].Position.Y),
+                        color
+                    );
+                    line.Draw(spriteBatch, Texture, color);
+                }
+            }
+        }
+
+        //Methods for drawing outlines using primitives
+        public virtual void DrawOutlineUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
+        {
+            basicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
+
+            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                graphicsDevice.DrawUserPrimitives(
+                    PrimitiveType.LineStrip,
+                    PerimeterVertices,
+                    0,
+                    PerimeterVertices.Length - 1
+                );
+            }
+        }
+
+        public virtual void DrawTriangulatedUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
+        {
+            basicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
+            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                graphicsDevice.DrawUserPrimitives(
+                    PrimitiveType.LineList,
+                    TriangleVertices,
+                    0,
+                    TriangleVertices.Length / 2
+                );
+            }
+        }
+
+        public virtual void DrawFilledUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
+        {
+            basicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
+
+            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                graphicsDevice.DrawUserPrimitives(
+                    PrimitiveType.TriangleList,
+                    FilledVertices,
+                    0,
+                    FilledVertices.Length / 3
+                );
+            }
+        }
+
+        public virtual void DrawOutlineUsingPrimitives(SpriteBatch spriteBatch, Matrix transformMatrix)
+        {
+            DrawOutlineUsingPrimitives(spriteBatch.GraphicsDevice, transformMatrix);
+        }
+
+        public virtual void DrawOutlineThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix, int thickness = 1)
+        {
+            foreach (var side in Lines)
+                side.DrawThickUsingPrimitives(graphicsDevice, transformMatrix, basicEffect, thickness);
+        }
+
+        //Helper methods
+        public override string ToString()
+        {
+            string returnString = 
+                $"Shake: {this.GetType().Name}, Position1: {Position}, Color: {Color}, Is Rotating: {Rotate}";
+
+            if(Rotate)
+                returnString += $", Rotation Speed: {RotationSpeedDegreesPerSecond} degrees/sec";
+
+
+            return returnString ;
+        }
+
+        public static Vector3 ToVector3(Vector2 vector)
+        {
+            return new(vector, 0);
+        }
+
+        public static VertexPositionColor ToVertexPositionColor(Vector2 vector, Color? color)
+        {
+            return new VertexPositionColor(ToVector3(vector), color ?? Color.White);
+        }
+
+        public static VertexPositionColor[] ToVertexPositionColor(Vector2[] vector, Color? color)
+        {
+            VertexPositionColor[] vertices = new VertexPositionColor[vector.Length];
+
+            for (int i = 0; i < vector.Length; i++)
+                vertices[i] = ToVertexPositionColor(vector[i], color);
+
+            return vertices;
+        }
+
+        public static Line[] ToLines(Vector2[] vectors, Color color)
+        {
+            int lineCount = vectors.Length - 1;
+            var lines = new Line[lineCount];
+
+            for (int i = 0; i < lineCount; i++)
+            {
+                lines[i] = new Line(vectors[i], vectors[i + 1], color);
+            }
+
+            return lines;
+        }
+
+        public static Line[] ToLines(List<Vector2> vectors, Color color)
+        {
+            return ToLines(vectors.ToArray(), color);
+        }
+
+        private static bool ApproximatelyEqual(Vector2 a, Vector2 b, float epsilon = 0.001f)
+        {
+            return Vector2.DistanceSquared(a, b) < epsilon * epsilon;
+        }
+
+        public static Vector2 GetCentroid(Vector2[] points)
+        {
+            // Use only the unique points, excluding closing duplicate if present
+            bool isClosed = ApproximatelyEqual(points[0], points[^1]);
+            int count = isClosed ? points.Length - 1 : points.Length;
+
+            Vector2 sum = Vector2.Zero;
+            for (int i = 0; i < count; i++)
+                sum += points[i];
+
+            return sum / count;
+        }
+
+        public static BasicEffect InitializeBasicEffect(GraphicsDevice graphicsDevice, Matrix viewMatrix)
+        {
+            return new(graphicsDevice)
+            {
+                VertexColorEnabled = true,
+                World = Matrix.Identity,
+                View = viewMatrix,
+                Projection = Matrix.CreateOrthographicOffCenter(
+                    0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height, 0, 0, 1)
+            };
         }
 
         public void MarkDirty()
@@ -125,36 +399,6 @@ namespace TiledRenderTest.Shapes
             MarkDirty();
         }
 
-        public virtual void Update(GameTime gameTime)
-        {
-            if (Rotate)
-            {
-                PerformRotation(gameTime);
-            }
-        }
-
-        public virtual void PerformRotation(GameTime gameTime)
-        {
-            if (rotationPoints == null || rotationPoints.Length == 0) return;
-
-            float rotationStepRadians = MathHelper.ToRadians(RotationSpeedDegreesPerSecond) * (float)gameTime.ElapsedGameTime.TotalSeconds;
-
-            float sin = MathF.Sin(rotationStepRadians);
-            float cos = MathF.Cos(rotationStepRadians);
-
-            // Rotate each point around the center by delta angle
-            for (int i = 0; i < rotationPoints.Length; i++)
-            {
-                Vector2 p = points[i] - center; // current relative to center
-
-                points[i] = new Vector2(
-                    cos * p.X - sin * p.Y + center.X,
-                    sin * p.X + cos * p.Y + center.Y
-                );
-            }
-
-            MarkDirty();
-        }
 
         /// <summary>
         /// Generates triangle indices for fan triangulation from center point
@@ -277,240 +521,6 @@ namespace TiledRenderTest.Shapes
             }
 
             return lineVerts;
-        }
-
-        //SpriteBatch methods for drawing
-        public virtual void Draw(SpriteBatch spriteBatch)
-        {
-            DrawOutline(spriteBatch, Color);
-        }
-
-        public virtual void DrawOutline(SpriteBatch spriteBatch, Color outlineColor, int outlineThickness = 1)
-        {
-            foreach (var line in Lines)
-                line.Draw(spriteBatch, Texture, outlineColor, outlineThickness);
-        }
-
-        public virtual void DrawOutline(SpriteBatch spriteBatch, int outlineThickness = 1)
-        {
-            DrawOutline(spriteBatch, Color, outlineThickness);
-        }
-
-        public virtual void DrawOutline(SpriteBatch spriteBatch)
-        {
-            DrawOutline(spriteBatch, Color);
-        }
-
-        public virtual void DrawFilled(SpriteBatch spriteBatch)
-        {
-            DrawFilled(spriteBatch, Color);
-        }
-
-        public virtual void DrawFilled(SpriteBatch spriteBatch, Color fillColor)
-        {
-            var vertices = FilledVertices;
-            if (vertices == null || vertices.Length == 0) return;
-
-            Dictionary<int, List<Edge>> edgeTable = [];
-            int yMin = int.MaxValue, yMax = int.MinValue;
-
-            // Build the edge table from triangle vertices
-            for (int i = 0; i < vertices.Length; i += 3)
-            {
-                if (i + 2 >= vertices.Length) break;
-
-                var p1 = vertices[i].Position;
-                var p2 = vertices[i + 1].Position;
-                var p3 = vertices[i + 2].Position;
-
-                InsertEdge(edgeTable, p1, p2);
-                InsertEdge(edgeTable, p2, p3);
-                InsertEdge(edgeTable, p3, p1);
-
-                yMin = Math.Min(yMin, (int)MathF.Floor(MathF.Min(p1.Y, MathF.Min(p2.Y, p3.Y))));
-                yMax = Math.Max(yMax, (int)MathF.Ceiling(MathF.Max(p1.Y, MathF.Max(p2.Y, p3.Y))));
-            }
-
-            List<Edge> activeEdges = [];
-
-            for (int y = yMin; y < yMax; y++)
-            {
-                if (edgeTable.TryGetValue(y, out var newEdges))
-                    activeEdges.AddRange(newEdges);
-
-                activeEdges.RemoveAll(e => e.yMax <= y);
-                activeEdges.Sort((a, b) => a.x.CompareTo(b.x));
-
-                for (int i = 0; i < activeEdges.Count - 1; i += 2)
-                {
-                    float xStart = activeEdges[i].x;
-                    float xEnd = activeEdges[i + 1].x;
-
-                    int startX = (int)MathF.Floor(xStart);
-                    int endX = (int)MathF.Ceiling(xEnd);
-                    int width = Math.Max(1, endX - startX);
-
-                    spriteBatch.Draw(Texture, new Microsoft.Xna.Framework.Rectangle(startX, y, width, 1), fillColor);
-                }
-
-                for (int i = 0; i < activeEdges.Count; i++)
-                {
-                    var edge = activeEdges[i];
-                    edge.x += edge.inverseSlope;
-                    activeEdges[i] = edge;
-                }
-            }
-        }
-
-
-        public virtual void DrawOutlineWithTriangles(SpriteBatch spriteBatch)
-        {
-            DrawOutlineWithTriangles(spriteBatch, Color);
-        }
-
-        public virtual void DrawOutlineWithTriangles(SpriteBatch spriteBatch, Color color)
-        {
-            // Draw triangulation lines using the triangulation vertices
-            for (int i = 0; i < TriangleVertices.Length; i += 2)
-            {
-                if (i + 1 < TriangleVertices.Length)
-                {
-                    var line = new Line(
-                        new Vector2(TriangleVertices[i].Position.X, TriangleVertices[i].Position.Y),
-                        new Vector2(TriangleVertices[i + 1].Position.X, TriangleVertices[i + 1].Position.Y),
-                        color
-                    );
-                    line.Draw(spriteBatch, Texture, color);
-                }
-            }
-        }
-
-        //Methods for drawing outlines using primitives
-        public virtual void DrawOutlineUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
-        {
-            basicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
-
-            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                graphicsDevice.DrawUserPrimitives(
-                    PrimitiveType.LineStrip,
-                    PerimeterVertices,
-                    0,
-                    PerimeterVertices.Length - 1
-                );
-            }
-        }
-
-        public virtual void DrawOutlineWithTrianglesUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
-        {
-            basicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
-            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                graphicsDevice.DrawUserPrimitives(
-                    PrimitiveType.LineList,
-                    TriangleVertices,
-                    0,
-                    TriangleVertices.Length / 2
-                );
-            }
-        }
-
-        public virtual void DrawFilledUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
-        {
-            basicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
-
-            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                graphicsDevice.DrawUserPrimitives(
-                    PrimitiveType.TriangleList,
-                    FilledVertices,
-                    0,
-                    FilledVertices.Length / 3
-                );
-            }
-        }
-
-        public virtual void DrawOutlineUsingPrimitives(SpriteBatch spriteBatch, Matrix transformMatrix)
-        {
-            DrawOutlineUsingPrimitives(spriteBatch.GraphicsDevice, transformMatrix);
-        }
-
-        public virtual void DrawOutlineThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix, int thickness = 1)
-        {
-            foreach (var side in Lines)
-                side.DrawThickUsingPrimitives(graphicsDevice, transformMatrix, basicEffect, thickness);
-        }
-
-        //Helper methods
-        public static Vector3 ToVector3(Vector2 vector)
-        {
-            return new(vector, 0);
-        }
-
-        public static VertexPositionColor ToVertexPositionColor(Vector2 vector, Color? color)
-        {
-            return new VertexPositionColor(ToVector3(vector), color ?? Color.White);
-        }
-
-        public static VertexPositionColor[] ToVertexPositionColor(Vector2[] vector, Color? color)
-        {
-            VertexPositionColor[] vertices = new VertexPositionColor[vector.Length];
-
-            for (int i = 0; i < vector.Length; i++)
-                vertices[i] = ToVertexPositionColor(vector[i], color);
-
-            return vertices;
-        }
-
-        public static Line[] ToLines(Vector2[] vectors, Color color)
-        {
-            int lineCount = vectors.Length - 1;
-            var lines = new Line[lineCount];
-
-            for (int i = 0; i < lineCount; i++)
-            {
-                lines[i] = new Line(vectors[i], vectors[i + 1], color);
-            }
-
-            return lines;
-        }
-
-        public static Line[] ToLines(List<Vector2> vectors, Color color)
-        {
-            return ToLines(vectors.ToArray(), color);
-        }
-
-        private static bool ApproximatelyEqual(Vector2 a, Vector2 b, float epsilon = 0.001f)
-        {
-            return Vector2.DistanceSquared(a, b) < epsilon * epsilon;
-        }
-
-        public static Vector2 GetCentroid(Vector2[] points)
-        {
-            // Use only the unique points, excluding closing duplicate if present
-            bool isClosed = ApproximatelyEqual(points[0], points[^1]);
-            int count = isClosed ? points.Length - 1 : points.Length;
-
-            Vector2 sum = Vector2.Zero;
-            for (int i = 0; i < count; i++)
-                sum += points[i];
-
-            return sum / count;
-        }
-
-        public static BasicEffect InitializeBasicEffect(GraphicsDevice graphicsDevice, Matrix viewMatrix)
-        {
-            return new(graphicsDevice)
-            {
-                VertexColorEnabled = true,
-                World = Matrix.Identity,
-                View = viewMatrix,
-                Projection = Matrix.CreateOrthographicOffCenter(
-                    0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height, 0, 0, 1)
-            };
         }
 
         private static void InsertEdge(Dictionary<int, List<Edge>> edgeTable, Vector3 p1, Vector3 p2)

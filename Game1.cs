@@ -4,7 +4,6 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using TiledRenderTest.Engine;
 using TiledRenderTest.Shapes;
 
@@ -20,19 +19,8 @@ namespace TiledRenderTest
         Sprite Sprite2 { get; set; } = new();
         Player Player { get; set; } = new();
         Camera Camera { get; set; }
+        ShapeManager ShapeManager { get; set; } = new();
 
-        public Shapes.Rectangle Rectangle { get; set; } = new(100, 100, 100, 100);
-        public Shapes.Rectangle Rectangle2 { get; set; } = new(0, 0, 200, 200);
-        public Shapes.Rectangle Rectangle3 { get; set; } = new(100, 100, 100, 100, Color.RoyalBlue);
-
-        public Star Star { get; set; } = new(new(-350, -50), Color.DarkSlateGray, 6);
-        public Star Star2 { get; set; } = new(new(0, 0), Color.DarkSlateGray, 5);
-        public Circle Circle { get; set; } = new(new(-120, -120), 40, 32, Color.Orange);
-        public Circle Circle2 { get; set; } = new(new(0, 0), 100, 50, Color.Aquamarine);
-        public Circle Circle3 { get; set; } = new(new(200, 200), 300, 50, Color.Aquamarine);
-        public Circle Circle4 { get; set; } = new(new(-150, 200), 100, 12, Color.Crimson) { Rotate = true };
-        public Polygon Polygon { get; set; } = new();
-        public Triangle Triangle { get; set; } = new(new(0,0), new(200,200), new(0,200));
         internal List<TileMap> Maps { get; set; } = [];
 
         private TileMap tileMap;
@@ -70,15 +58,8 @@ namespace TiledRenderTest
             Player.Position = new(-40, 0);
             Camera = new(ScreenWidth, ScreenHeight);
 
+            ShapeManager.AddRandomShapes(20, new(-400, -400), new(400, 400));
 
-            //Vector2[] points = [new(0,0), new(50,50), new(50,100), new(100,100), new(120,120), new(150,150), new(150,120), new(100,120)];
-
-            //Polygon.SetPoints(points);
-
-            //Star2.SetData(80, 30, 5);
-            Star.Rotate = true;
-            Triangle.Rotate = true;
-            //Rectangle.Rotate = true;
             CreateShapes();
         }
 
@@ -113,7 +94,8 @@ namespace TiledRenderTest
 
             //Debug.WriteLine($"Player Position: {Player.Position}");
 
-            UpdateShapes(gameTime);
+            //UpdateShapes(gameTime);
+            ShapeManager.Update(gameTime);
 
         }
 
@@ -121,26 +103,6 @@ namespace TiledRenderTest
         {
             //Stopwatch stopwatch = new();
             //stopwatch.Start();
-
-            foreach (var shape in Shapes)
-            {
-                shape.Update(gameTime);
-            }
-            Star.Update(gameTime);
-            Triangle.Update(gameTime);
-            //Rectangle.Update(gameTime);
-            Circle4.Update(gameTime);
-
-            //var options = new ParallelOptions
-            //{
-            //    MaxDegreeOfParallelism = Environment.ProcessorCount / 2
-            //};
-
-            //Parallel.For(0, Shapes.Count, i =>
-            //{
-            //    Shapes[i].Update(gameTime);
-            //});
-
 
             //stopwatch.Stop();
 
@@ -177,76 +139,9 @@ namespace TiledRenderTest
             //Sprite2.Draw(SpriteBatch);
             Player.Draw(SpriteBatch);
 
-            //Line.Draw(SpriteBatch);
-            //Rectangle2.DrawOutline(SpriteBatch, Color.Violet);
-            //Rectangle.DrawOutlineUsingPrimitives(SpriteBatch);
-            //Rectangle.DrawOutline(SpriteBatch);
-            //Rectangle3.Draw(SpriteBatch);
-            //Rectangle3.DrawOutline(SpriteBatch);
-            //Line2.Draw(SpriteBatch);
-            //Rectangle.DrawOutLineWithTriangles(SpriteBatch);
-
-            //Star.DrawOutline(SpriteBatch);
-            //Polygon.DrawOutline(SpriteBatch, 2);
-
-            Triangle.DrawOutline(SpriteBatch);
-            Circle4.DrawOutlineWithTriangles(SpriteBatch);
-            
-            //Circle4.DrawFilled(SpriteBatch, Color.Blue);
-
-            //Star.DrawOutLineWithTriangles(SpriteBatch);
-            //Star.DrawOutLineWithTriangles(SpriteBatch);
-
-            //Star.Draw(SpriteBatch);
-
-            //Circle.DrawOutline(SpriteBatch);
-            //Circle2.DrawOutline(SpriteBatch);
-            //Circle2.DrawOutlineWithTrianglesUsingPrimitives(GraphicsDevice, Camera.Transformation);
-            //Circle.DrawOutLineWithTriangles(SpriteBatch);
-
-            
-            foreach (var shape in Shapes)
-            {
-                //shape.TestDraw(SpriteBatch);
-                //shape.DrawOutline(SpriteBatch);
-                //shape.DrawOutLineWithTriangles(SpriteBatch);
-                //shape.DrawFilled(SpriteBatch);
-            }
-
-
-            //Circle3.DrawOutLineWithTriangles(SpriteBatch);
+            ShapeManager.DrawOutline(SpriteBatch);
 
             SpriteBatch.End();
-
-            foreach (var shape in Shapes)
-            {
-                shape.DrawOutlineWithTrianglesUsingPrimitives(GraphicsDevice, Camera.Transformation);
-                //shape.DrawFilledUsingPrimitives(GraphicsDevice, Camera.Transformation);
-                //shape.DrawOutlineUsingPrimitives(GraphicsDevice, Camera.Transformation);
-            }
-
-            //Circle3.DrawFilledUsingPrimitives(GraphicsDevice, Camera.Transformation);
-            //Circle2.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 4);
-
-            //Rectangle.DrawOutlineUsingPrimitives(GraphicsDevice, Camera.Transformation);
-            //Line2.DrawThickUsingPrimitives(GraphicsDevice, Camera.Transformation);
-
-            //Star.DrawOutlineUsingPrimitives(GraphicsDevice, Camera.Transformation);
-            //Star.DrawOutlineWithTrianglesUsingPrimitives(GraphicsDevice, Camera.Transformation);
-            //Star.DrawOutlineThickWithTrianglesUsingPrimitives(GraphicsDevice, Camera.Transformation, 2);
-            //Star2.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 3);
-            //Star2.DrawFilledUsingPrimitives(GraphicsDevice, Camera.Transformation);
-
-            //Star2.DrawOutlineThickWithTrianglesUsingPrimitives(GraphicsDevice, Camera.Transformation, 2);
-
-            //Triangle.DrawOutlineUsingPrimitives(GraphicsDevice, Camera.Transformation);
-            //Triangle.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 5);
-
-            //Rectangle.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 5);
-            //Rectangle2.DrawOutlineThickWithTrianglesUsingPrimitives(GraphicsDevice, Camera.Transformation, 4);
-
-            //Triangle.DrawFilledUsingPrimitives(GraphicsDevice, Camera.Transformation);
-            //Triangle.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 3);
         }
 
         public static Texture2D CreateTextureFromColor(Color color)
@@ -293,12 +188,13 @@ namespace TiledRenderTest
                 }
                 */
 
-                //Shapes.Add(new Star(position, color, Random.Next(3, 10), Random.Next(70, 150), Random.Next(40, 70))
-                //{
-                //    Rotate = true,
-                //    RotationSpeedDegreesPerSecond = speed,
-                //});
+                Shapes.Add(new Star(position, color, Random.Next(3, 10), Random.Next(70, 150), Random.Next(40, 70))
+                {
+                    Rotate = true,
+                    RotationSpeedDegreesPerSecond = speed,
+                });
 
+                /*
                 Shapes.Add(new
                     Triangle(position,
                     position + new Vector2(0, 100), 
@@ -307,6 +203,7 @@ namespace TiledRenderTest
                     Rotate = true,
                     RotationSpeedDegreesPerSecond = speed,
                 });
+                */
             }
         }
     }

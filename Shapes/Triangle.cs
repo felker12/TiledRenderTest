@@ -7,7 +7,6 @@ namespace TiledRenderTest.Shapes
     {
         public Vector2 Position2 { get; protected set; } = new(50, 50);
         public Vector2 Position3 { get; protected set; } = new(0, 50);
-        //public override Vector2[] Points { get => points; protected set { points = value; MarkDirty(); } }
 
         public Triangle() : base()
         {
