@@ -38,7 +38,7 @@ namespace TiledRenderTest.Shapes
             isDirty = false;
         }
 
-        private void RebuildThickVertices(int thickness = 2)
+        public void RebuildThickVertices(int thickness = 2)
         {
             if (isDirty2 is false)
                 return;

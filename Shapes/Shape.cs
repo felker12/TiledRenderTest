@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace TiledRenderTest.Shapes
 {
@@ -18,9 +19,10 @@ namespace TiledRenderTest.Shapes
         protected BasicEffect basicEffect;
         protected Vector2[] points = [],
             rotationPoints; // Original points relative to center for rotation
-        protected VertexPositionColor[] edgeVertices,
+        protected VertexPositionColor[] perimeterVertices,
             filledVertices,
-            triangleVertices;
+            triangleVertices,
+            thickVertices;
         protected Texture2D texture;
         protected float currentRotation = 0f; // Track current rotation angle
         protected Color color = Color.White;
@@ -32,13 +34,15 @@ namespace TiledRenderTest.Shapes
         public virtual Vector2 Center { get { RebuildIfDirty(); return center; } }
         public virtual Vector2[] Points { get => points; protected set { points = value; MarkDirty(); } }
         public virtual Line[] Lines { get { RebuildIfDirty(); return sides; } }
-        public virtual VertexPositionColor[] PerimeterVertices { get { RebuildIfDirty(); return edgeVertices; } }
+        public virtual VertexPositionColor[] PerimeterVertices { get { RebuildIfDirty(); return perimeterVertices; } }
         public virtual VertexPositionColor[] FilledVertices { get { RebuildIfDirty(); return filledVertices; } }
         public virtual VertexPositionColor[] TriangleVertices { get { RebuildIfDirty(); return triangleVertices; } }
+        public virtual VertexPositionColor[] ThickLineVertices { get { RebuildIfDirty(); return thickVertices; } }
         public virtual int[] TriangleIndices { get { RebuildIfDirty(); return triangleIndices; } }
         public virtual int TriangleCount { get { RebuildIfDirty(); return triangleIndices?.Length / 3 ?? 0; } }
         public virtual int[] TriangulationLineIndices { get { RebuildIfDirty(); return triangulationLineIndices; } }
         public bool Rotate { get; set; } = false; // Default rotation state
+        public int LineThickness { get; protected set; } = 1; // Default line thickness
 
         public Shape(Vector2 position, Color color)
         {
@@ -216,6 +220,7 @@ namespace TiledRenderTest.Shapes
         public virtual void DrawTriangulatedUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
             basicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
+
             foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
             {
                 pass.Apply();
@@ -251,8 +256,15 @@ namespace TiledRenderTest.Shapes
 
         public virtual void DrawOutlineThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix, int thickness = 1)
         {
-            foreach (var side in Lines)
-                side.DrawThickUsingPrimitives(graphicsDevice, transformMatrix, basicEffect, thickness);
+            RebuildThickVertices(thickness);
+
+            basicEffect = InitializeBasicEffect(graphicsDevice, transformMatrix);
+
+            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                graphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, ThickLineVertices, 0, ThickLineVertices.Length / 3); 
+            }
         }
 
         //Helper methods
@@ -351,8 +363,9 @@ namespace TiledRenderTest.Shapes
                 triangulationLineIndices = [];
                 sides = [];
                 filledVertices = [];
-                edgeVertices = [];
+                perimeterVertices = [];
                 triangleVertices = [];
+                thickVertices = [];
                 isDirty = false;
                 return;
             }
@@ -374,10 +387,16 @@ namespace TiledRenderTest.Shapes
             filledVertices = GenerateFilledVerticesFromIndices(points, triangleIndices);
             sides = ToLines(points, Color);
 
-            edgeVertices = new VertexPositionColor[points.Length];
-            for (int i = 0; i < points.Length; i++)
+            //perimeterVertices = new VertexPositionColor[points.Length];
+            //for (int i = 0; i < points.Length; i++)
+            //{
+            //    perimeterVertices[i] = ToVertexPositionColor(points[i], Color);
+            //}
+
+            perimeterVertices = [];
+            foreach (var line in sides)
             {
-                edgeVertices[i] = ToVertexPositionColor(points[i], Color);
+                perimeterVertices = [.. perimeterVertices, .. line.Vertices]; // Combine all vertices
             }
 
             // Generate triangulation line indices for wireframe triangulation
@@ -387,18 +406,31 @@ namespace TiledRenderTest.Shapes
             isDirty = false;
         }
 
+        public void RebuildThickVertices(int thickness)
+        {
+            RebuildIfDirty();
+            LineThickness = thickness;
+
+            thickVertices = [];
+            foreach (var line in sides)
+            {
+                line.RebuildThickVertices(thickness); // Ensure each line has its thick vertices built
+                thickVertices = [.. thickVertices, .. line.ThickVertices]; // Combine all thick vertices
+            }
+        }
+
         protected void ClearCache()
         {
-            edgeVertices = null;
+            perimeterVertices = null;
             filledVertices = null;
             triangleIndices = null;
             triangulationLineIndices = null;
+            thickVertices = null;
             sides = null;
             rotationPoints = null; // Clear rotation points cache
 
             MarkDirty();
         }
-
 
         /// <summary>
         /// Generates triangle indices for fan triangulation from center point
@@ -543,6 +575,26 @@ namespace TiledRenderTest.Shapes
                 edgeTable[yStart] = list = [];
 
             list.Add(new Edge(xStart, invSlope, yEnd));
+        }
+
+        public virtual VertexPositionColor[] GetOutlineAsLineList()
+        {
+            if (PerimeterVertices == null || PerimeterVertices.Length < 2)
+                return [];
+
+            var lines = new List<VertexPositionColor>();
+
+            for (int i = 0; i < PerimeterVertices.Length - 1; i++)
+            {
+                lines.Add(PerimeterVertices[i]);
+                lines.Add(PerimeterVertices[i + 1]);
+            }
+
+            // Close the loop
+            lines.Add(PerimeterVertices[^1]);
+            lines.Add(PerimeterVertices[0]);
+
+            return [.. lines];
         }
     }
 }

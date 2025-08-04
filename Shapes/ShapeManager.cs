@@ -13,12 +13,31 @@ namespace TiledRenderTest.Shapes
         public List<Shape> Shapes { get; private set; } = [];
         private Random Random { get; set; } = new();
 
+        public virtual VertexPositionColor[] PerimeterVertices { get; set; }
+        public virtual VertexPositionColor[] FilledVertices { get; set; }
+        public virtual VertexPositionColor[] TriangleVertices { get; set; }
+        public virtual VertexPositionColor[] ThickLineVertices { get; set; }
+        private BasicEffect BasicEffect { get; set; } = null!;
+
         public ShapeManager() { }
 
         public void Update(GameTime gameTime)
         {
+            PerimeterVertices = [];
+            FilledVertices = [];
+            TriangleVertices = [];
+            ThickLineVertices = [];
+
             foreach (var shape in Shapes)
+            {
                 shape.Update(gameTime);
+                shape.RebuildThickVertices(shape.LineThickness);
+
+                PerimeterVertices = [.. PerimeterVertices, .. shape.GetOutlineAsLineList()];
+                FilledVertices = [.. FilledVertices, .. shape.FilledVertices];
+                TriangleVertices = [.. TriangleVertices, .. shape.TriangleVertices];
+                ThickLineVertices = [.. ThickLineVertices, .. shape.ThickLineVertices];
+            }
         }
 
         //SpriteBatch Draw calls    
@@ -67,8 +86,18 @@ namespace TiledRenderTest.Shapes
         //GraphicsDevice Draw calls
         public virtual void DrawOutlineUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
-            foreach (var shape in Shapes)
-                shape.DrawOutlineUsingPrimitives(graphicsDevice, viewMatrix);
+            BasicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
+
+            foreach (EffectPass pass in BasicEffect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                graphicsDevice.DrawUserPrimitives(
+                    PrimitiveType.LineList,
+                    PerimeterVertices,
+                    0,
+                    PerimeterVertices.Length / 2 // Each line is made of 2 vertices
+                );
+            }
         }
 
         public virtual void DrawOutlineUsingPrimitives(SpriteBatch spriteBatch, Matrix viewMatrix)
@@ -78,26 +107,54 @@ namespace TiledRenderTest.Shapes
 
         public virtual void DrawTriangulatedUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
-            foreach (var shape in Shapes)
-                shape.DrawTriangulatedUsingPrimitives(graphicsDevice, viewMatrix);
-        }
+            BasicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
 
+            foreach (EffectPass pass in BasicEffect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                graphicsDevice.DrawUserPrimitives(
+                    PrimitiveType.LineList,
+                    TriangleVertices,
+                    0,
+                    TriangleVertices.Length / 2
+                );
+            }
+        }
         public virtual void DrawFilledUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
-           foreach (var shape in Shapes)
-                shape.DrawFilledUsingPrimitives(graphicsDevice, viewMatrix);
+            BasicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
+
+            foreach (EffectPass pass in BasicEffect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                graphicsDevice.DrawUserPrimitives(
+                    PrimitiveType.TriangleList,
+                    FilledVertices,
+                    0,
+                    FilledVertices.Length / 3
+                );
+            }
         }
 
         public virtual void DrawOutlineThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix, int thickness = 1)
         {
-            foreach (var shape in Shapes)
-                shape.DrawOutlineThickUsingPrimitives(graphicsDevice, viewMatrix, thickness);
+            BasicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
+
+            foreach (EffectPass pass in BasicEffect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                graphicsDevice.DrawUserPrimitives(
+                    PrimitiveType.TriangleList,
+                    ThickLineVertices,
+                    0,
+                    ThickLineVertices.Length / 3 // Each quad is made of 2 triangles, so we divide by 3
+                );
+            }
         }
 
         public void AddShape(Shape shape)
         {
             ArgumentNullException.ThrowIfNull(shape);
-
             Shapes.Add(shape);
         }
 
@@ -110,6 +167,18 @@ namespace TiledRenderTest.Shapes
         public void ClearShapes()
         {
             Shapes.Clear();
+        }
+
+        public static BasicEffect InitializeBasicEffect(GraphicsDevice graphicsDevice, Matrix viewMatrix)
+        {
+            return new(graphicsDevice)
+            {
+                VertexColorEnabled = true,
+                World = Matrix.Identity,
+                View = viewMatrix,
+                Projection = Matrix.CreateOrthographicOffCenter(
+                    0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height, 0, 0, 1)
+            };
         }
 
         public void AddRandomShapes(int amount, Vector2 startPos, Vector2 endPos)
@@ -136,24 +205,66 @@ namespace TiledRenderTest.Shapes
 
                 color = new(r, g, b, alpha);
                 position = new(x, y);
-                /*
-                if (Random.Next(0, 2) == 0)
-                {
-                    Shapes.Add(new Circle(new(Random.Next(-500, 500), Random.Next(-500, 500)), Random.Next(20, 100), Random.Next(3, 64), Color.Aquamarine));
-                }
-                else
-                {
-                    Shapes.Add(new Star(new(Random.Next(-500, 500), Random.Next(-500, 500)), Color.Aquamarine, Random.Next(3, 10), Random.Next(50, 100), Random.Next(10, 50)));
-                }
-                */
 
+                int shape = Random.Next(0, 4); // 0 = Star, 1 = Circle, 2 = Rectangle, 3 = Triangle 
+
+                switch (shape)
+                {
+                    case 0:
+                        Shapes.Add(new Star(position, color, Random.Next(3, 10), Random.Next(70, 150), Random.Next(40, 70))
+                        {
+                            Rotate = true,
+                            RotationSpeedDegreesPerSecond = speed,
+                        });
+                        break;
+
+                    case 1:
+                        Shapes.Add(new Circle(position, Random.Next(20, 100), Random.Next(3, 64), color)
+                        {
+                            Rotate = true,
+                            RotationSpeedDegreesPerSecond = speed,
+                        });
+                        break;
+
+                    case 2:
+                        Shapes.Add(new Shapes.Rectangle(position, Random.Next(50, 150), Random.Next(50, 150), color)
+                        {
+                            Rotate = true,
+                            RotationSpeedDegreesPerSecond = speed,
+                        });
+                        break;
+
+                    case 3:
+                        Shapes.Add(new Triangle(
+                            position,
+                            position + new Vector2(0, Random.Next(30, 200)),
+                            position + new Vector2(Random.Next(30, 200), 0))
+                        {
+                            Rotate = true,
+                            RotationSpeedDegreesPerSecond = speed,
+                        });
+                        break;
+                }
+
+                /*
                 Shapes.Add(new Star(position, color, Random.Next(3, 10), Random.Next(70, 150), Random.Next(40, 70))
                 {
                     Rotate = true,
                     RotationSpeedDegreesPerSecond = speed,
                 });
 
-                /*
+                Shapes.Add(new Circle(position, Random.Next(20, 100), Random.Next(3, 64), color)
+                {
+                    Rotate = true,
+                    RotationSpeedDegreesPerSecond = speed,
+                });
+
+                Shapes.Add(new Shapes.Rectangle(position, Random.Next(50, 150), Random.Next(50, 150), color)
+                {
+                    Rotate = true,
+                    RotationSpeedDegreesPerSecond = speed,
+                });
+
                 Shapes.Add(new
                     Triangle(position,
                     position + new Vector2(0, 100), 
@@ -164,13 +275,6 @@ namespace TiledRenderTest.Shapes
                 });
                 */
             }
-
-
-
-
         }
-
-
-
     }
 }

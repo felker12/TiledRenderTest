@@ -58,9 +58,11 @@ namespace TiledRenderTest
             Player.Position = new(-40, 0);
             Camera = new(ScreenWidth, ScreenHeight);
 
-            ShapeManager.AddRandomShapes(20, new(-400, -400), new(400, 400));
+            ShapeManager.AddRandomShapes(100, new(-400, -400), new(400, 400));
 
-            CreateShapes();
+            //CreateShapes();
+
+            Shapes.Add(new Star(new Vector2(-100, -100), 6) { Rotate = true });
         }
 
         protected override void LoadContent()
@@ -94,15 +96,21 @@ namespace TiledRenderTest
 
             //Debug.WriteLine($"Player Position: {Player.Position}");
 
-            //UpdateShapes(gameTime);
+            UpdateShapes(gameTime);
             ShapeManager.Update(gameTime);
 
+            
         }
 
         public void UpdateShapes(GameTime gameTime)
         {
             //Stopwatch stopwatch = new();
             //stopwatch.Start();
+
+            foreach (var shape in Shapes)
+            {
+                shape.Update(gameTime);
+            }
 
             //stopwatch.Stop();
 
@@ -121,7 +129,9 @@ namespace TiledRenderTest
 
             // TODO: Add your drawing code here
 
-            //base.Draw(gameTime);
+
+            Stopwatch stopwatch = new();
+            stopwatch.Start();
 
             SpriteBatch.Begin(
                 SpriteSortMode.Deferred,
@@ -139,9 +149,30 @@ namespace TiledRenderTest
             //Sprite2.Draw(SpriteBatch);
             Player.Draw(SpriteBatch);
 
-            ShapeManager.DrawOutline(SpriteBatch);
+            //ShapeManager.DrawOutline(SpriteBatch);
+            //ShapeManager.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 12);
+            //ShapeManager.DrawTriangulated(SpriteBatch);
+            //hapeManager.DrawTriangulatedUsingPrimitives(GraphicsDevice, Camera.Transformation);
+            //ShapeManager.DrawOutlineUsingPrimitives(GraphicsDevice, Camera.Transformation);
+            //ShapeManager.DrawFilledUsingPrimitives(GraphicsDevice, Camera.Transformation);
+            ShapeManager.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 4);
+
+            foreach (var shape in Shapes)
+            {
+                shape.Draw(SpriteBatch);
+            }
 
             SpriteBatch.End();
+
+
+
+            stopwatch.Stop();
+
+            Debug.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
+            totalTime += stopwatch.Elapsed.TotalMilliseconds;
+            count++;
+
+            Debug.WriteLine($"Average Time: {AverageTime} ms, Total Time: {totalTime}");
         }
 
         public static Texture2D CreateTextureFromColor(Color color)
@@ -164,7 +195,7 @@ namespace TiledRenderTest
             Color color;
             int speed;
 
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < 5; i++)
             {
                 x = Random.Next(-400, 400);
                 y = Random.Next(-400, 400);
@@ -189,6 +220,18 @@ namespace TiledRenderTest
                 */
 
                 Shapes.Add(new Star(position, color, Random.Next(3, 10), Random.Next(70, 150), Random.Next(40, 70))
+                {
+                    Rotate = true,
+                    RotationSpeedDegreesPerSecond = speed,
+                });
+
+                Shapes.Add(new Circle(position, Random.Next(20, 100), Random.Next(3, 64), color)
+                {
+                    Rotate = true,
+                    RotationSpeedDegreesPerSecond = speed,
+                });
+
+                Shapes.Add(new Shapes.Rectangle(position, Random.Next(50, 150), Random.Next(50, 150), color)
                 {
                     Rotate = true,
                     RotationSpeedDegreesPerSecond = speed,
