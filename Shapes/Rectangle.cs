@@ -45,12 +45,18 @@ namespace TiledRenderTest.Shapes
         //public override void DrawFilled(SpriteBatch spriteBatch)
         //{
         //    spriteBatch.Draw(Texture, Position, Color);
-        
+
 
         public override bool Contains(Vector2 point)
         {
-            return point.X >= Position.X && point.X <= Position.X + Width &&
-                   point.Y >= Position.Y && point.Y <= Position.Y + Height;
+            RebuildIfDirty(); // Make sure points are up to date with rotation
+
+            if (points == null || points.Length < 4)
+                return false;
+
+            // Rectangle = 2 triangles: (0,1,2) and (0,2,3)
+            return PointInTriangle(point, points[0], points[1], points[2]) ||
+                   PointInTriangle(point, points[0], points[2], points[3]);
         }
     }
 }

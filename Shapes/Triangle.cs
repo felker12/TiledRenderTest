@@ -46,7 +46,12 @@ namespace TiledRenderTest.Shapes
 
         public override bool Contains(Vector2 point)
         {
-            return PointInTriangle(point, Position, Position2, Position3);
+            RebuildIfDirty(); // Ensure points are up-to-date after rotation
+
+            if (points == null || points.Length < 3)
+                return false;
+
+            return PointInTriangle(point, points[0], points[1], points[2]);
         }
 
         public override void DrawFilledUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)

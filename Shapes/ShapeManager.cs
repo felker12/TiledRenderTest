@@ -255,13 +255,16 @@ namespace TiledRenderTest.Shapes
                         break;
                 }
 
+
                 /*
                 Shapes.Add(new Star(position, color, Random.Next(3, 10), Random.Next(70, 150), Random.Next(40, 70))
                 {
                     Rotate = true,
                     RotationSpeedDegreesPerSecond = speed,
                 });
+                */
 
+                /*
                 Shapes.Add(new Circle(position, Random.Next(20, 100), Random.Next(3, 64), color)
                 {
                     Rotate = true,

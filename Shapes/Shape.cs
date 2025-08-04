@@ -13,7 +13,8 @@ namespace TiledRenderTest.Shapes
         protected int[] triangleIndices; // Every 3 indices form a triangle
         protected int[] triangulationLineIndices; // Indices for drawing triangulation lines
 
-        protected Line[] sides;
+        protected Line[] sides; 
+        protected BasicTriangle[] triangles;
         protected Vector2 center;
         protected bool isDirty = true;
         protected BasicEffect basicEffect;
@@ -45,6 +46,7 @@ namespace TiledRenderTest.Shapes
         public virtual int[] TriangulationLineIndices { get { RebuildIfDirty(); return triangulationLineIndices; } }
         public bool Rotate { get; set; } = false; // Default rotation state
         public int LineThickness { get; protected set; } = 1; // Default line thickness
+        public virtual BasicTriangle[] Triangles { get { RebuildIfDirty(); return triangles; } }
 
         public Shape(Vector2 position, Color color)
         {
@@ -406,6 +408,9 @@ namespace TiledRenderTest.Shapes
             triangulationLineIndices = GenerateTriangulationLineIndices(points);
             triangleVertices = GenerateTriangulationVerticesFromIndices(points, triangulationLineIndices); //used when drawing outline with triangles
 
+            // Build BasicTriangle array from triangleIndices
+            triangles = GenerateBasicTriangles(points, triangleIndices);
+
             isDirty = false;
         }
 
@@ -440,18 +445,12 @@ namespace TiledRenderTest.Shapes
             // This method can be overridden in derived classes to implement specific containment logic
             RebuildIfDirty();
 
-
-            // Default to polygon-based point-in-triangle test using triangulation
-            if (TriangleVertices == null || TriangleVertices.Length < 3)
+            if (triangles == null || triangles.Length == 0)
                 return false;
 
-            for (int i = 0; i < TriangleVertices.Length; i += 3)
+            foreach (var tri in triangles)
             {
-                Vector2 a = new(TriangleVertices[i].Position.X, TriangleVertices[i].Position.Y);
-                Vector2 b = new(TriangleVertices[i + 1].Position.X, TriangleVertices[i + 1].Position.Y);
-                Vector2 c = new(TriangleVertices[i + 2].Position.X, TriangleVertices[i + 2].Position.Y);
-
-                if (PointInTriangle(point, a, b, c))
+                if (tri.Contains(point))
                     return true;
             }
 
@@ -627,6 +626,31 @@ namespace TiledRenderTest.Shapes
             lines.Add(PerimeterVertices[0]);
 
             return [.. lines];
+        }
+
+        protected virtual BasicTriangle[] GenerateBasicTriangles(Vector2[] vertices, int[] indices)
+        {
+            if (vertices == null || indices == null || indices.Length % 3 != 0) return [];
+
+            bool isClosed = ApproximatelyEqual(vertices[0], vertices[^1]);
+            int uniqueCount = isClosed ? vertices.Length - 1 : vertices.Length;
+
+            // Create extended vertices array with center point
+            var extendedPoints = new Vector2[uniqueCount + 1];
+            Array.Copy(vertices, 0, extendedPoints, 0, uniqueCount);
+            extendedPoints[uniqueCount] = center;
+
+            var result = new BasicTriangle[indices.Length / 3];
+            for (int i = 0; i < indices.Length; i += 3)
+            {
+                Vector2 a = extendedPoints[indices[i]];
+                Vector2 b = extendedPoints[indices[i + 1]];
+                Vector2 c = extendedPoints[indices[i + 2]];
+
+                result[i / 3] = new BasicTriangle(a, b, c);
+            }
+
+            return result;
         }
 
         protected static bool PointInTriangle(Vector2 pt, Vector2 a, Vector2 b, Vector2 c)

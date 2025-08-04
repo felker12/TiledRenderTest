@@ -59,21 +59,30 @@ namespace TiledRenderTest
             Sprite2.Position = new(300, 50);
             Player.Texture = CreateTextureFromColor(Color.White);
             Player.Position = new(-40, 0);
+            Player.Color = Color.DarkBlue;
             Camera = new(ScreenWidth, ScreenHeight);
 
-            Rectangle = new(new Vector2(0, 0), 100, 100, Color.Green);
+            Rectangle = new(new Vector2(0, 0), 100, 100, Color.Green)
+            {
+                Rotate = true
+            };
 
-            //ShapeManager.AddRandomShapes(10, new(-400, -400), new(400, 400));
+            ShapeManager.AddRandomShapes(10, new(-400, -400), new(400, 400));
 
             //CreateShapes();
 
             Shapes.Add(new Star(new Vector2(-300, -200), 6) 
             { 
-                //Rotate = true 
+                Rotate = true 
             });
             Shapes.Add(new Triangle(new Vector2(120,120), new Vector2(150, 180), new Vector2(200,200))
             { 
-                //Rotate = true 
+                Rotate = true 
+            });
+            Shapes.Add(new Circle(new Vector2(200, -200), 50, 32, Color.Aquamarine)
+            {
+                Rotate = true,
+                RotationSpeedDegreesPerSecond = 30
             });
         }
 
@@ -130,7 +139,6 @@ namespace TiledRenderTest
                 else
                 {
                     shape.Color = shape.DefaultColor;
-                    Player.Color = Color.DarkBlue;
                 }
             }
 
@@ -181,14 +189,14 @@ namespace TiledRenderTest
             //ShapeManager.DrawOutline(SpriteBatch);
             //ShapeManager.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 12);
             //ShapeManager.DrawTriangulated(SpriteBatch);
-            //hapeManager.DrawTriangulatedUsingPrimitives(GraphicsDevice, Camera.Transformation);
+            ShapeManager.DrawTriangulatedUsingPrimitives(GraphicsDevice, Camera.Transformation);
             //ShapeManager.DrawOutlineUsingPrimitives(GraphicsDevice, Camera.Transformation);
             //ShapeManager.DrawFilledUsingPrimitives(GraphicsDevice, Camera.Transformation);
-            ShapeManager.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 4);
+            //ShapeManager.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 4);
 
             foreach (var shape in Shapes)
             {
-                shape.Draw(SpriteBatch);
+                shape.DrawTriangulated(SpriteBatch);
             }
 
             Rectangle.DrawFilled(SpriteBatch);
