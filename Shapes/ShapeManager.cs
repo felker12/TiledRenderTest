@@ -86,6 +86,8 @@ namespace TiledRenderTest.Shapes
         //GraphicsDevice Draw calls
         public virtual void DrawOutlineUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
+            if (PerimeterVertices is null || PerimeterVertices.Length == 0) return;
+
             BasicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
 
             foreach (EffectPass pass in BasicEffect.CurrentTechnique.Passes)
@@ -107,6 +109,8 @@ namespace TiledRenderTest.Shapes
 
         public virtual void DrawTriangulatedUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
+            if (TriangleVertices is null || TriangleVertices.Length == 0) return;
+
             BasicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
 
             foreach (EffectPass pass in BasicEffect.CurrentTechnique.Passes)
@@ -122,6 +126,8 @@ namespace TiledRenderTest.Shapes
         }
         public virtual void DrawFilledUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
+            if (FilledVertices is null || FilledVertices.Length == 0) return;
+
             BasicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
 
             foreach (EffectPass pass in BasicEffect.CurrentTechnique.Passes)
@@ -138,6 +144,8 @@ namespace TiledRenderTest.Shapes
 
         public virtual void DrawOutlineThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix, int thickness = 1)
         {
+            if (ThickLineVertices is null || ThickLineVertices.Length == 0) return;
+
             BasicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
 
             foreach (EffectPass pass in BasicEffect.CurrentTechnique.Passes)
@@ -195,7 +203,7 @@ namespace TiledRenderTest.Shapes
             for (int i = 0; i < amount; i++)
             {
                 x = Random.Next((int)startPos.X, (int)endPos.X);
-                y = Random.Next((int)startPos.X, (int)endPos.X);
+                y = Random.Next((int)startPos.Y, (int)endPos.Y);
 
                 r = Random.Next(0, 256);
                 g = Random.Next(0, 256);
@@ -235,10 +243,11 @@ namespace TiledRenderTest.Shapes
                         break;
 
                     case 3:
-                        Shapes.Add(new Triangle(
-                            position,
-                            position + new Vector2(0, Random.Next(30, 200)),
-                            position + new Vector2(Random.Next(30, 200), 0))
+                        Vector2 p1 = position;
+                        Vector2 p2 = position + new Vector2(Random.Next(-50, 50), Random.Next(50, 150));
+                        Vector2 p3 = position + new Vector2(Random.Next(50, 150), Random.Next(-50, 50));
+
+                        Shapes.Add(new Triangle(p1, p2, p3)
                         {
                             Rotate = true,
                             RotationSpeedDegreesPerSecond = speed,

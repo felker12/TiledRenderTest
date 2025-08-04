@@ -44,6 +44,11 @@ namespace TiledRenderTest.Shapes
             SetTrianglePoints();
         }
 
+        public override bool Contains(Vector2 point)
+        {
+            return PointInTriangle(point, Position, Position2, Position3);
+        }
+
         public override void DrawFilledUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
             basicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);

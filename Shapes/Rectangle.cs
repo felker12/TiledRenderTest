@@ -42,9 +42,15 @@ namespace TiledRenderTest.Shapes
             ];
         }
 
-        public override void Draw(SpriteBatch spriteBatch)
+        //public override void DrawFilled(SpriteBatch spriteBatch)
+        //{
+        //    spriteBatch.Draw(Texture, Position, Color);
+        
+
+        public override bool Contains(Vector2 point)
         {
-            spriteBatch.Draw(Texture, Position, Color);
+            return point.X >= Position.X && point.X <= Position.X + Width &&
+                   point.Y >= Position.Y && point.Y <= Position.Y + Height;
         }
     }
 }

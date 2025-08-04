@@ -25,12 +25,14 @@ namespace TiledRenderTest.Shapes
             thickVertices;
         protected Texture2D texture;
         protected float currentRotation = 0f; // Track current rotation angle
-        protected Color color = Color.White;
 
+        protected Color color = Color.White;
+        public Color DefaultColor { get; protected set; } = Color.White;
         public float RotationSpeedDegreesPerSecond { get; set; } = 90f;
         public Vector2 Position { get; protected set; } = Vector2.Zero;
-        public Color Color { get => color;  protected set { color = value; MarkDirty(); } } // Default color
-        public Texture2D Texture { get { texture ??= Game1.CreateTextureFromColor(Color); return texture; } }
+        public Color Color { get => color; set { color = value; MarkDirty(); } } // Default color
+        //public Texture2D Texture { get { texture ??= Game1.CreateTextureFromColor(Color); return texture; } }
+        public Texture2D Texture { get; set; } = Game1.CreateTextureFromColor(Color.White);
         public virtual Vector2 Center { get { RebuildIfDirty(); return center; } }
         public virtual Vector2[] Points { get => points; protected set { points = value; MarkDirty(); } }
         public virtual Line[] Lines { get { RebuildIfDirty(); return sides; } }
@@ -48,6 +50,7 @@ namespace TiledRenderTest.Shapes
         {
             Position = position;
             Color = color;
+            DefaultColor = color;
         }
 
         public Shape(Vector2 position)
@@ -58,6 +61,7 @@ namespace TiledRenderTest.Shapes
         public Shape(Color color)
         {
             Color = color;
+            DefaultColor = color;
         }
 
         public Shape()
@@ -276,7 +280,6 @@ namespace TiledRenderTest.Shapes
             if(Rotate)
                 returnString += $", Rotation Speed: {RotationSpeedDegreesPerSecond} degrees/sec";
 
-
             return returnString ;
         }
 
@@ -430,6 +433,35 @@ namespace TiledRenderTest.Shapes
             rotationPoints = null; // Clear rotation points cache
 
             MarkDirty();
+        }
+
+        public virtual bool Contains(Vector2 point)
+        {
+            // This method can be overridden in derived classes to implement specific containment logic
+            RebuildIfDirty();
+
+
+            // Default to polygon-based point-in-triangle test using triangulation
+            if (TriangleVertices == null || TriangleVertices.Length < 3)
+                return false;
+
+            for (int i = 0; i < TriangleVertices.Length; i += 3)
+            {
+                Vector2 a = new(TriangleVertices[i].Position.X, TriangleVertices[i].Position.Y);
+                Vector2 b = new(TriangleVertices[i + 1].Position.X, TriangleVertices[i + 1].Position.Y);
+                Vector2 c = new(TriangleVertices[i + 2].Position.X, TriangleVertices[i + 2].Position.Y);
+
+                if (PointInTriangle(point, a, b, c))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public virtual void Intersects(Shape otherShape)
+        {
+            // This method can be overridden in derived classes to implement specific intersection logic
+            // For now, it does nothing
         }
 
         /// <summary>
@@ -595,6 +627,22 @@ namespace TiledRenderTest.Shapes
             lines.Add(PerimeterVertices[0]);
 
             return [.. lines];
+        }
+
+        protected static bool PointInTriangle(Vector2 pt, Vector2 a, Vector2 b, Vector2 c)
+        {
+            float dX = pt.X - c.X;
+            float dY = pt.Y - c.Y;
+            float dX21 = c.X - b.X;
+            float dY12 = b.Y - c.Y;
+            float D = dY12 * (a.X - c.X) + dX21 * (a.Y - c.Y);
+            float s = dY12 * dX + dX21 * dY;
+            float t = (c.Y - a.Y) * dX + (a.X - c.X) * dY;
+
+            if (D < 0)
+                return s <= 0 && t <= 0 && s + t >= D;
+
+            return s >= 0 && t >= 0 && s + t <= D;
         }
     }
 }

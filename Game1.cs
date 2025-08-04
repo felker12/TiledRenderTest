@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using TiledRenderTest.Engine;
 using TiledRenderTest.Shapes;
 
@@ -33,6 +34,8 @@ namespace TiledRenderTest
         public int count = 0;   
         public double AverageTime => count > 0 ? totalTime / count : 0;
 
+        Shapes.Rectangle Rectangle { get; set; }
+
         public Game1()
         {
             GraphicsDeviceManager = new GraphicsDeviceManager(this)
@@ -54,15 +57,24 @@ namespace TiledRenderTest
             Sprite.Texture = CreateTextureFromColor(Color.Chocolate);
             Sprite2.Texture = CreateTextureFromColor(Color.Red);
             Sprite2.Position = new(300, 50);
-            Player.Texture = CreateTextureFromColor(Color.DarkBlue);
+            Player.Texture = CreateTextureFromColor(Color.White);
             Player.Position = new(-40, 0);
             Camera = new(ScreenWidth, ScreenHeight);
 
-            ShapeManager.AddRandomShapes(100, new(-400, -400), new(400, 400));
+            Rectangle = new(new Vector2(0, 0), 100, 100, Color.Green);
+
+            //ShapeManager.AddRandomShapes(10, new(-400, -400), new(400, 400));
 
             //CreateShapes();
 
-            Shapes.Add(new Star(new Vector2(-100, -100), 6) { Rotate = true });
+            Shapes.Add(new Star(new Vector2(-300, -200), 6) 
+            { 
+                //Rotate = true 
+            });
+            Shapes.Add(new Triangle(new Vector2(120,120), new Vector2(150, 180), new Vector2(200,200))
+            { 
+                //Rotate = true 
+            });
         }
 
         protected override void LoadContent()
@@ -99,7 +111,6 @@ namespace TiledRenderTest
             UpdateShapes(gameTime);
             ShapeManager.Update(gameTime);
 
-            
         }
 
         public void UpdateShapes(GameTime gameTime)
@@ -110,16 +121,35 @@ namespace TiledRenderTest
             foreach (var shape in Shapes)
             {
                 shape.Update(gameTime);
+
+                if (shape.Contains(Player.Position))
+                {
+                    shape.Color = Color.Red;
+                    //Debug.WriteLine("contains");
+                }
+                else
+                {
+                    shape.Color = shape.DefaultColor;
+                    Player.Color = Color.DarkBlue;
+                }
             }
 
-            //stopwatch.Stop();
+            Rectangle.Update(gameTime);
 
-            //Debug.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
-            //totalTime += stopwatch.Elapsed.TotalMilliseconds;
-            //count++;
 
-            //Debug.WriteLine($"Average Time: {AverageTime} ms, Total Time: {totalTime}");
-        }
+            if (Rectangle.Contains(Player.Position))
+                Rectangle.Color = Color.Red;
+            else
+                Rectangle.Color = Color.Green;
+
+                //stopwatch.Stop();
+
+                //Debug.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
+                //totalTime += stopwatch.Elapsed.TotalMilliseconds;
+                //count++;
+
+                //Debug.WriteLine($"Average Time: {AverageTime} ms, Total Time: {totalTime}");
+            }
 
 
 
@@ -130,8 +160,8 @@ namespace TiledRenderTest
             // TODO: Add your drawing code here
 
 
-            Stopwatch stopwatch = new();
-            stopwatch.Start();
+            //Stopwatch stopwatch = new();
+            //stopwatch.Start();
 
             SpriteBatch.Begin(
                 SpriteSortMode.Deferred,
@@ -147,7 +177,6 @@ namespace TiledRenderTest
 
             //Sprite.Draw(SpriteBatch);
             //Sprite2.Draw(SpriteBatch);
-            Player.Draw(SpriteBatch);
 
             //ShapeManager.DrawOutline(SpriteBatch);
             //ShapeManager.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 12);
@@ -162,17 +191,20 @@ namespace TiledRenderTest
                 shape.Draw(SpriteBatch);
             }
 
+            Rectangle.DrawFilled(SpriteBatch);
+
+            Player.Draw(SpriteBatch);
             SpriteBatch.End();
 
 
 
-            stopwatch.Stop();
+            //stopwatch.Stop();
 
-            Debug.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
-            totalTime += stopwatch.Elapsed.TotalMilliseconds;
-            count++;
+            //Debug.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
+            //totalTime += stopwatch.Elapsed.TotalMilliseconds;
+            //count++;
 
-            Debug.WriteLine($"Average Time: {AverageTime} ms, Total Time: {totalTime}");
+            //Debug.WriteLine($"Average Time: {AverageTime} ms, Total Time: {totalTime}");
         }
 
         public static Texture2D CreateTextureFromColor(Color color)

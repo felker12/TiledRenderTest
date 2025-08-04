@@ -56,5 +56,10 @@ namespace TiledRenderTest.Shapes
 
             Points = newPoints; // This will call MarkDirty(), triggering rebuild
         }
+
+        public override bool Contains(Vector2 point)
+        {
+            return Vector2.DistanceSquared(point, Center) <= Radius * Radius;
+        }
     }
 }

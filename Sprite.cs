@@ -13,19 +13,20 @@ namespace TiledRenderTest
         public Texture2D Texture { get; set; } = null!;
         public Rectangle Frame { get; set; } = new(0, 0, 32, 32);
         public float Speed { get; set; } = 250f;
+        public Color Color { get; set; } = Color.White;
 
         public Sprite() { }
 
         public Sprite(GraphicsDevice graphicsDevice)
         {
-            Texture = CreateTextureFromColor(Color.White, graphicsDevice);
+            Texture = CreateTextureFromColor(Color, graphicsDevice);
             Position = new(50, 50);
         }
 
         public virtual void Draw(SpriteBatch spriteBatch)
         {
             //spriteBatch.Draw(Texture, Position, Color.White);
-            spriteBatch.Draw(Texture, Position, Frame, Color.White);
+            spriteBatch.Draw(Texture, Position, Frame, Color);
         }
 
         public virtual void Update(GameTime gameTime)
