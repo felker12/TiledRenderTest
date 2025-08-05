@@ -14,6 +14,8 @@ namespace TiledRenderTest
         public Rectangle Frame { get; set; } = new(0, 0, 32, 32);
         public float Speed { get; set; } = 250f;
         public Color Color { get; set; } = Color.White;
+        public Rectangle Rectangle => new((int)Position.X, (int)Position.Y, Width, Height);
+        public Shapes.Rectangle ShapeRectangle => new(Position, Width, Height, Color);
 
         public Sprite() { }
 

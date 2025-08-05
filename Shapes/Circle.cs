@@ -20,6 +20,7 @@ namespace TiledRenderTest.Shapes
             Radius = radius;
             PointCount = points;
             Color = color;
+            DefaultColor = color;
             Initialize();
         }
 

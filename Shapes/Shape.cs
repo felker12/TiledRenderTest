@@ -457,10 +457,23 @@ namespace TiledRenderTest.Shapes
             return false;
         }
 
-        public virtual void Intersects(Shape otherShape)
+        public virtual bool Intersects(Shape otherShape)
         {
-            // This method can be overridden in derived classes to implement specific intersection logic
-            // For now, it does nothing
+            // This method can be overridden in derived classes to implement specific intersection logicRebuildIfDirty();
+
+            if (triangles == null || triangles.Length == 0)
+                return false;
+
+            foreach (var tri in triangles)
+            {
+                foreach (var otherTri in otherShape.Triangles)
+                {
+                    if (tri.Intersects(otherTri))
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

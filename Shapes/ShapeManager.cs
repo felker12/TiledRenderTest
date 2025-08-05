@@ -247,7 +247,7 @@ namespace TiledRenderTest.Shapes
                         Vector2 p2 = position + new Vector2(Random.Next(-50, 50), Random.Next(50, 150));
                         Vector2 p3 = position + new Vector2(Random.Next(50, 150), Random.Next(-50, 50));
 
-                        Shapes.Add(new Triangle(p1, p2, p3)
+                        Shapes.Add(new Triangle(p1, p2, p3, color)
                         {
                             Rotate = true,
                             RotationSpeedDegreesPerSecond = speed,

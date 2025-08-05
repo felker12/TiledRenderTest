@@ -58,5 +58,34 @@ namespace TiledRenderTest.Shapes
             return PointInTriangle(point, points[0], points[1], points[2]) ||
                    PointInTriangle(point, points[0], points[2], points[3]);
         }
+
+        public override bool Intersects(Shape otherShape)
+        {
+            RebuildIfDirty();
+
+            if (points == null || points.Length < 4 || otherShape.Points == null || otherShape.Points.Length < 3)
+                return false;
+
+            // Create the 2 triangles for this rectangle
+            BasicTriangle[] thisTriangles =
+            [
+                new(points[0], points[1], points[2]),
+                new(points[0], points[2], points[3])
+            ];
+
+            // Triangulate the other shape
+            var otherTriangles = otherShape.Triangles;
+
+            foreach (var tri1 in thisTriangles)
+            {
+                foreach (var tri2 in otherTriangles)
+                {
+                    if (tri1.Intersects(tri2))
+                        return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

@@ -23,6 +23,7 @@ namespace TiledRenderTest.Shapes
             this(center, numbOfPoints, outerRadius, innerRadius)
         {
             Color = color;
+            DefaultColor = color;
         }
 
         public void SetData(int outerRadius = 100, int innerRadius = 40, int numOfPoints = 5)

@@ -71,6 +71,7 @@ namespace TiledRenderTest
 
             //CreateShapes();
 
+            /*
             Shapes.Add(new Star(new Vector2(-300, -200), 6) 
             { 
                 Rotate = true 
@@ -84,6 +85,14 @@ namespace TiledRenderTest
                 Rotate = true,
                 RotationSpeedDegreesPerSecond = 30
             });
+
+            var rect1 = new Shapes.Rectangle(100, 100, 50, 50);
+            var rect2 = new Shapes.Rectangle(120, 120, 50, 50);
+
+            Shapes.Add(rect1);
+            Shapes.Add(rect2);
+            Shapes.Add(Rectangle);
+            */
         }
 
         protected override void LoadContent()
@@ -131,33 +140,31 @@ namespace TiledRenderTest
             {
                 shape.Update(gameTime);
 
-                if (shape.Contains(Player.Position))
-                {
+                if(shape.Intersects(Player.ShapeRectangle))
                     shape.Color = Color.Red;
-                    //Debug.WriteLine("contains");
-                }
                 else
-                {
                     shape.Color = shape.DefaultColor;
-                }
             }
 
-            Rectangle.Update(gameTime);
+            foreach (var shape in ShapeManager.Shapes)
+            {
+                shape.Update(gameTime);
 
-
-            if (Rectangle.Contains(Player.Position))
-                Rectangle.Color = Color.Red;
-            else
-                Rectangle.Color = Color.Green;
-
-                //stopwatch.Stop();
-
-                //Debug.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
-                //totalTime += stopwatch.Elapsed.TotalMilliseconds;
-                //count++;
-
-                //Debug.WriteLine($"Average Time: {AverageTime} ms, Total Time: {totalTime}");
+                if (shape.Intersects(Player.ShapeRectangle))
+                    shape.Color = Color.Red;
+                else
+                    shape.Color = shape.DefaultColor;
             }
+
+            //stopwatch.Stop();
+
+            //Debug.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
+            //totalTime += stopwatch.Elapsed.TotalMilliseconds;
+            //count++;
+
+            //Debug.WriteLine($"Average Time: {AverageTime} ms, Total Time: {totalTime}");
+
+        }
 
 
 
