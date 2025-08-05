@@ -68,6 +68,8 @@ namespace TiledRenderTest
             };
 
             ShapeManager.AddRandomShapes(10, new(-400, -400), new(400, 400));
+            var ellipse = new Ellipse(new Vector2(200, 200), 120, 40, 32, Color.Orange) { Rotate = true };
+            ShapeManager.Add(ellipse);
 
             //CreateShapes();
 

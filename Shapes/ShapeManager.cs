@@ -2,9 +2,6 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TiledRenderTest.Shapes
 {
@@ -160,19 +157,19 @@ namespace TiledRenderTest.Shapes
             }
         }
 
-        public void AddShape(Shape shape)
+        public void Add(Shape shape)
         {
             ArgumentNullException.ThrowIfNull(shape);
             Shapes.Add(shape);
         }
 
-        public void RemoveShape(Shape shape)
+        public void Remove(Shape shape)
         {
             ArgumentNullException.ThrowIfNull(shape);
             Shapes.Remove(shape);
         }
 
-        public void ClearShapes()
+        public void Clear()
         {
             Shapes.Clear();
         }
@@ -192,7 +189,7 @@ namespace TiledRenderTest.Shapes
         public void AddRandomShapes(int amount, Vector2 startPos, Vector2 endPos)
         {
             Random = new Random();
-            ClearShapes();
+            Clear();
 
             float x, y;
             int r, g, b, alpha;
