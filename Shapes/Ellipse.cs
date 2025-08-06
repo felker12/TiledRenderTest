@@ -8,7 +8,7 @@ namespace TiledRenderTest.Shapes
         public int RadiusX { get; private set; } = 40;
         public int RadiusY { get; private set; } = 40;
         public int PointCount { get; private set; } = 32;
-        public override Vector2 Center => Position + new Vector2(RadiusX, RadiusY);
+        public override Vector2 Center => Position;
 
         public Ellipse()
         {

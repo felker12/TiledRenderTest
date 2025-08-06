@@ -1,16 +1,23 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Buffers;
 
 namespace TiledRenderTest.Shapes
 {
-    public class Line
+    public class Line : IDisposable
     {
         Vector2 distance;
         Vector2 normalizedDirection, normal;
         bool isDirty = true, isDirty2 = true;
         VertexPositionColor[] vertices, thickVertices;
         float angle, length;
+        private int thickVertexCount;
+        private int lastThickness = 2; 
+        private bool disposed = false;
+
+        // Optional: a pool size of 6 is fixed, but scalable if you ever support caps/joins
+        private static readonly int ThickVertexPoolSize = 6;
 
         public Vector2 Position { get;  private set; } = Vector2.Zero;
         public Vector2 Position2 { get; private set; } = Vector2.Zero;
@@ -20,6 +27,7 @@ namespace TiledRenderTest.Shapes
         public Vector2 Distance { get { RebuildIfDirty(); return distance; } }
         public float Angle { get { RebuildIfDirty(); return angle; } }
         public float Length { get { RebuildIfDirty(); return length; } }
+        public int ThickVertexCount => thickVertexCount;
 
         protected virtual void RebuildIfDirty()
         {
@@ -40,7 +48,7 @@ namespace TiledRenderTest.Shapes
 
         public void RebuildThickVertices(int thickness = 2)
         {
-            if (isDirty2 is false)
+            if (!isDirty2 && thickVertices != null && thickness == lastThickness)
                 return;
 
             distance = Position2 - Position;
@@ -50,8 +58,30 @@ namespace TiledRenderTest.Shapes
                 normalizedDirection = Vector2.Normalize(distance);
                 normal = new Vector2(-normalizedDirection.Y, normalizedDirection.X);
             }
-            thickVertices = GetThickLineVertices(Position, Position2, thickness, Color);
+
+            lastThickness = thickness;
             isDirty2 = false;
+
+            // Return old array if previously pooled
+            if (thickVertices != null)
+                ArrayPool<VertexPositionColor>.Shared.Return(thickVertices);
+
+            thickVertices = ArrayPool<VertexPositionColor>.Shared.Rent(ThickVertexPoolSize);
+            thickVertexCount = 6;
+
+            Vector2 offset = normal * (thickness / 2f);
+
+            Vector2 a1 = Position + offset;
+            Vector2 a2 = Position - offset;
+            Vector2 b1 = Position2 + offset;
+            Vector2 b2 = Position2 - offset;
+
+            thickVertices[0] = new VertexPositionColor(new Vector3(a1, 0), Color);
+            thickVertices[1] = new VertexPositionColor(new Vector3(a2, 0), Color);
+            thickVertices[2] = new VertexPositionColor(new Vector3(b1, 0), Color);
+            thickVertices[3] = new VertexPositionColor(new Vector3(b1, 0), Color);
+            thickVertices[4] = new VertexPositionColor(new Vector3(a2, 0), Color);
+            thickVertices[5] = new VertexPositionColor(new Vector3(b2, 0), Color);
         }
 
         public Line() 
@@ -136,28 +166,30 @@ namespace TiledRenderTest.Shapes
             return $"Position: {Position}, Position2 {Position2}, Distance: {Distance}";
         }
 
-        public VertexPositionColor[] GetThickLineVertices(Vector2 a, Vector2 b, float thickness, Color color)
+        public void Dispose()
         {
-            Vector2 offset = this.normal * (thickness / 2f);
+            Dispose(true);
+            GC.SuppressFinalize(this); // Prevent finalizer from running, if present
+        }
 
-            // Four corners of the quad
-            Vector2 a1 = a + offset;
-            Vector2 a2 = a - offset;
-            Vector2 b1 = b + offset;
-            Vector2 b2 = b - offset;
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed)
+                return;
 
-            return
-            [
-                // Triangle 1 (clockwise)
-                new VertexPositionColor(new Vector3(a1, 0), color),
-                new VertexPositionColor(new Vector3(a2, 0), color),
-                new VertexPositionColor(new Vector3(b1, 0), color),
+            if (disposing)
+            {
+                // Dispose managed resources
+                if (thickVertices != null)
+                {
+                    ArrayPool<VertexPositionColor>.Shared.Return(thickVertices, clearArray: true);
+                    thickVertices = null;
+                }
+            }
 
-                // Triangle 2 (clockwise)
-                new VertexPositionColor(new Vector3(b1, 0), color),
-                new VertexPositionColor(new Vector3(a2, 0), color),
-                new VertexPositionColor(new Vector3(b2, 0), color),
-            ];
+            // If you ever add unmanaged resources, dispose them here
+
+            disposed = true;
         }
     }
 }

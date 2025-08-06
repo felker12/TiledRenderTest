@@ -2,19 +2,17 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Linq;
 
 namespace TiledRenderTest.Shapes
 {
     public class Shape
     {
-        //The fields should only be set through rebuilding methods (in this case RebuildIfDirty())
         // Index-based triangulation data
         protected int[] triangleIndices; // Every 3 indices form a triangle
         protected int[] triangulationLineIndices; // Indices for drawing triangulation lines
 
-        protected Line[] sides; 
-        protected BasicTriangle[] triangles;
+        protected Line[] sides;
         protected Vector2 center;
         protected bool isDirty = true;
         protected BasicEffect basicEffect;
@@ -22,9 +20,14 @@ namespace TiledRenderTest.Shapes
             rotationPoints; // Original points relative to center for rotation
         protected VertexPositionColor[] perimeterVertices,
             filledVertices,
-            triangleVertices,
-            thickVertices;
-        protected Texture2D texture;
+            triangleVertices;
+
+        private List<VertexPositionColor> thickVertices = [];
+
+        private float _cachedSin, _cachedCos, _lastRotationStep = float.NaN; 
+        private BoundingBox _boundingBox;
+        private bool _boundingBoxDirty = true;
+
         protected float currentRotation = 0f; // Track current rotation angle
 
         protected Color color = Color.White;
@@ -32,21 +35,21 @@ namespace TiledRenderTest.Shapes
         public float RotationSpeedDegreesPerSecond { get; set; } = 90f;
         public Vector2 Position { get; protected set; } = Vector2.Zero;
         public Color Color { get => color; set { color = value; MarkDirty(); } } // Default color
-        //public Texture2D Texture { get { texture ??= Game1.CreateTextureFromColor(Color); return texture; } }
         public Texture2D Texture { get; set; } = Game1.CreateTextureFromColor(Color.White);
-        public virtual Vector2 Center { get { RebuildIfDirty(); return center; } }
+        public virtual Vector2 Center { get; set; }
         public virtual Vector2[] Points { get => points; protected set { points = value; MarkDirty(); } }
-        public virtual Line[] Lines { get { RebuildIfDirty(); return sides; } }
-        public virtual VertexPositionColor[] PerimeterVertices { get { RebuildIfDirty(); return perimeterVertices; } }
-        public virtual VertexPositionColor[] FilledVertices { get { RebuildIfDirty(); return filledVertices; } }
-        public virtual VertexPositionColor[] TriangleVertices { get { RebuildIfDirty(); return triangleVertices; } }
-        public virtual VertexPositionColor[] ThickLineVertices { get { RebuildIfDirty(); return thickVertices; } }
-        public virtual int[] TriangleIndices { get { RebuildIfDirty(); return triangleIndices; } }
-        public virtual int TriangleCount { get { RebuildIfDirty(); return triangleIndices?.Length / 3 ?? 0; } }
-        public virtual int[] TriangulationLineIndices { get { RebuildIfDirty(); return triangulationLineIndices; } }
+        public virtual Line[] Lines { get { return sides; } }
+        public virtual VertexPositionColor[] PerimeterVertices { get { return perimeterVertices; } }
+        public virtual VertexPositionColor[] FilledVertices { get { return filledVertices; } }
+        public virtual VertexPositionColor[] TriangleVertices { get { return triangleVertices; } }
+        public List<VertexPositionColor> ThickLineVertices => thickVertices;
+        public virtual int[] TriangleIndices { get { return triangleIndices; } }
+        public virtual int TriangleCount { get { return triangleIndices?.Length / 3 ?? 0; } }
+        public virtual int[] TriangulationLineIndices { get { return triangulationLineIndices; } }
         public bool Rotate { get; set; } = false; // Default rotation state
         public int LineThickness { get; protected set; } = 1; // Default line thickness
-        public virtual BasicTriangle[] Triangles { get { RebuildIfDirty(); return triangles; } }
+        //public virtual BasicTriangle[] Triangles { get { return triangles; } }
+        public virtual BasicTriangle[] Triangles { get; set; }
 
         public Shape(Vector2 position, Color color)
         {
@@ -72,6 +75,9 @@ namespace TiledRenderTest.Shapes
 
         public virtual void Update(GameTime gameTime)
         {
+            if (isDirty)
+                RebuildIfDirty(); // Only rebuild once per frame
+
             if (Rotate)
             {
                 PerformRotation(gameTime);
@@ -84,8 +90,13 @@ namespace TiledRenderTest.Shapes
 
             float rotationStepRadians = MathHelper.ToRadians(RotationSpeedDegreesPerSecond) * (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            float sin = MathF.Sin(rotationStepRadians);
-            float cos = MathF.Cos(rotationStepRadians);
+            // Cache trig calculations if rotation step hasn't changed
+            if (_lastRotationStep != rotationStepRadians)
+            {
+                _cachedSin = MathF.Sin(rotationStepRadians);
+                _cachedCos = MathF.Cos(rotationStepRadians);
+                _lastRotationStep = rotationStepRadians;
+            }
 
             // Rotate each point around the center by delta angle
             for (int i = 0; i < rotationPoints.Length; i++)
@@ -93,8 +104,8 @@ namespace TiledRenderTest.Shapes
                 Vector2 p = points[i] - center; // current relative to center
 
                 points[i] = new Vector2(
-                    cos * p.X - sin * p.Y + center.X,
-                    sin * p.X + cos * p.Y + center.Y
+                    _cachedCos * p.X - _cachedSin * p.Y + center.X,
+                    _cachedSin * p.X + _cachedCos * p.Y + center.Y
                 );
             }
 
@@ -102,38 +113,17 @@ namespace TiledRenderTest.Shapes
         }
 
         //SpriteBatch methods for drawing
-        public virtual void Draw(SpriteBatch spriteBatch)
-        {
-            DrawOutline(spriteBatch);
-        }
-
-        public virtual void DrawOutline(SpriteBatch spriteBatch, Color outlineColor, int outlineThickness = 1)
-        {
-            foreach (var line in Lines)
-                line.Draw(spriteBatch, Texture, outlineColor, outlineThickness);
-        }
-
         public virtual void DrawOutline(SpriteBatch spriteBatch, int outlineThickness = 1)
         {
-            DrawOutline(spriteBatch, Color, outlineThickness);
-        }
-
-        public virtual void DrawOutline(SpriteBatch spriteBatch)
-        {
-            DrawOutline(spriteBatch, Color);
+            foreach (var line in Lines)
+                line.Draw(spriteBatch, Texture, Color, outlineThickness);
         }
 
         public virtual void DrawFilled(SpriteBatch spriteBatch)
         {
-            DrawFilled(spriteBatch, Color);
-        }
-
-        public virtual void DrawFilled(SpriteBatch spriteBatch, Color fillColor)
-        {
             var vertices = FilledVertices;
             if (vertices == null || vertices.Length == 0) return;
 
-            Dictionary<int, List<Edge>> edgeTable = [];
             int yMin = int.MaxValue, yMax = int.MinValue;
 
             // Build the edge table from triangle vertices
@@ -145,12 +135,21 @@ namespace TiledRenderTest.Shapes
                 var p2 = vertices[i + 1].Position;
                 var p3 = vertices[i + 2].Position;
 
+                yMin = Math.Min(yMin, (int)MathF.Floor(MathF.Min(p1.Y, MathF.Min(p2.Y, p3.Y))));
+                yMax = Math.Max(yMax, (int)MathF.Ceiling(MathF.Max(p1.Y, MathF.Max(p2.Y, p3.Y))));
+            }
+
+            Dictionary<int, List<Edge>> edgeTable = new(yMax - yMin + 1);
+
+            for (int i = 0; i < vertices.Length; i += 3)
+            {
+                var p1 = vertices[i].Position;
+                var p2 = vertices[i + 1].Position;
+                var p3 = vertices[i + 2].Position;
+
                 InsertEdge(edgeTable, p1, p2);
                 InsertEdge(edgeTable, p2, p3);
                 InsertEdge(edgeTable, p3, p1);
-
-                yMin = Math.Min(yMin, (int)MathF.Floor(MathF.Min(p1.Y, MathF.Min(p2.Y, p3.Y))));
-                yMax = Math.Max(yMax, (int)MathF.Ceiling(MathF.Max(p1.Y, MathF.Max(p2.Y, p3.Y))));
             }
 
             List<Edge> activeEdges = [];
@@ -172,7 +171,7 @@ namespace TiledRenderTest.Shapes
                     int endX = (int)MathF.Ceiling(xEnd);
                     int width = Math.Max(1, endX - startX);
 
-                    spriteBatch.Draw(Texture, new Microsoft.Xna.Framework.Rectangle(startX, y, width, 1), fillColor);
+                    spriteBatch.Draw(Texture, new Microsoft.Xna.Framework.Rectangle(startX, y, width, 1), Color);
                 }
 
                 for (int i = 0; i < activeEdges.Count; i++)
@@ -186,11 +185,6 @@ namespace TiledRenderTest.Shapes
 
         public virtual void DrawTriangulated(SpriteBatch spriteBatch)
         {
-            DrawTriangulated(spriteBatch, Color);
-        }
-
-        public virtual void DrawTriangulated(SpriteBatch spriteBatch, Color color)
-        {
             // Draw triangulation lines using the triangulation vertices
             for (int i = 0; i < TriangleVertices.Length; i += 2)
             {
@@ -201,88 +195,21 @@ namespace TiledRenderTest.Shapes
                         new Vector2(TriangleVertices[i + 1].Position.X, TriangleVertices[i + 1].Position.Y),
                         color
                     );
-                    line.Draw(spriteBatch, Texture, color);
+                    line.Draw(spriteBatch, Texture, Color);
                 }
-            }
-        }
-
-        //Methods for drawing outlines using primitives
-        public virtual void DrawOutlineUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
-        {
-            basicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
-
-            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                graphicsDevice.DrawUserPrimitives(
-                    PrimitiveType.LineStrip,
-                    PerimeterVertices,
-                    0,
-                    PerimeterVertices.Length - 1
-                );
-            }
-        }
-
-        public virtual void DrawTriangulatedUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
-        {
-            basicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
-
-            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                graphicsDevice.DrawUserPrimitives(
-                    PrimitiveType.LineList,
-                    TriangleVertices,
-                    0,
-                    TriangleVertices.Length / 2
-                );
-            }
-        }
-
-        public virtual void DrawFilledUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
-        {
-            basicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
-
-            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                graphicsDevice.DrawUserPrimitives(
-                    PrimitiveType.TriangleList,
-                    FilledVertices,
-                    0,
-                    FilledVertices.Length / 3
-                );
-            }
-        }
-
-        public virtual void DrawOutlineUsingPrimitives(SpriteBatch spriteBatch, Matrix transformMatrix)
-        {
-            DrawOutlineUsingPrimitives(spriteBatch.GraphicsDevice, transformMatrix);
-        }
-
-        public virtual void DrawOutlineThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix, int thickness = 1)
-        {
-            RebuildThickVertices(thickness);
-
-            basicEffect = InitializeBasicEffect(graphicsDevice, transformMatrix);
-
-            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                graphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, ThickLineVertices, 0, ThickLineVertices.Length / 3); 
             }
         }
 
         //Helper methods
         public override string ToString()
         {
-            string returnString = 
+            string returnString =
                 $"Shake: {this.GetType().Name}, Position1: {Position}, Color: {Color}, Is Rotating: {Rotate}";
 
-            if(Rotate)
+            if (Rotate)
                 returnString += $", Rotation Speed: {RotationSpeedDegreesPerSecond} degrees/sec";
 
-            return returnString ;
+            return returnString;
         }
 
         public static Vector3 ToVector3(Vector2 vector)
@@ -356,26 +283,38 @@ namespace TiledRenderTest.Shapes
         public void MarkDirty()
         {
             isDirty = true;
+            _boundingBoxDirty = true;
         }
 
-        protected virtual void RebuildIfDirty()
+        public void RebuildIfDirty()
         {
-            if (!isDirty) return;
+            if (!isDirty)
+                return;
 
-            if (points == null || points.Length == 0)
+            isDirty = false;
+
+            if (points == null || points.Length < 3)
             {
-                triangleIndices = [];
-                triangulationLineIndices = [];
-                sides = [];
-                filledVertices = [];
-                perimeterVertices = [];
-                triangleVertices = [];
-                thickVertices = [];
-                isDirty = false;
+                ClearBuffers();
                 return;
             }
 
+            RebuildGeometry();
+            RebuildTriangulation();
+            RebuildVertices();
+        }
+
+
+        private void RebuildGeometry()
+        {
             center = GetCentroid(points);
+
+            // Update bounding boxes if needed
+            if (_boundingBoxDirty)
+            {
+                UpdateBoundingBox();
+                _boundingBoxDirty = false;
+            }
 
             // Create rotation points array - store original points relative to center
             if (rotationPoints == null || rotationPoints.Length != points.Length)
@@ -386,44 +325,50 @@ namespace TiledRenderTest.Shapes
             {
                 rotationPoints[i] = points[i] - center;
             }
+        }
 
+        private void RebuildTriangulation()
+        {
             // Generate triangle indices instead of Triangle objects
             triangleIndices = GenerateTriangleIndices(points);
             filledVertices = GenerateFilledVerticesFromIndices(points, triangleIndices);
             sides = ToLines(points, Color);
-
-            //perimeterVertices = new VertexPositionColor[points.Length];
-            //for (int i = 0; i < points.Length; i++)
-            //{
-            //    perimeterVertices[i] = ToVertexPositionColor(points[i], Color);
-            //}
-
-            perimeterVertices = [];
-            foreach (var line in sides)
-            {
-                perimeterVertices = [.. perimeterVertices, .. line.Vertices]; // Combine all vertices
-            }
 
             // Generate triangulation line indices for wireframe triangulation
             triangulationLineIndices = GenerateTriangulationLineIndices(points);
             triangleVertices = GenerateTriangulationVerticesFromIndices(points, triangulationLineIndices); //used when drawing outline with triangles
 
             // Build BasicTriangle array from triangleIndices
-            triangles = GenerateBasicTriangles(points, triangleIndices);
+            Triangles = GenerateBasicTriangles(points, triangleIndices);
+        }
 
-            isDirty = false;
+        private void RebuildVertices()
+        {
+            int totalVerts = 0;
+            foreach (var line in sides)
+                totalVerts += line.Vertices.Length;
+
+            var buffer = new VertexPositionColor[totalVerts];
+            var span = new Span<VertexPositionColor>(buffer);
+
+            int offset = 0;
+            foreach (var line in sides)
+            {
+                var verts = line.Vertices;
+                verts.CopyTo(span.Slice(offset, verts.Length));
+                offset += verts.Length;
+            }
+            perimeterVertices = buffer;
         }
 
         public void RebuildThickVertices(int thickness)
         {
-            RebuildIfDirty();
-            LineThickness = thickness;
+            thickVertices.Clear();
 
-            thickVertices = [];
             foreach (var line in sides)
             {
-                line.RebuildThickVertices(thickness); // Ensure each line has its thick vertices built
-                thickVertices = [.. thickVertices, .. line.ThickVertices]; // Combine all thick vertices
+                line.RebuildThickVertices(thickness);
+                thickVertices.AddRange(line.ThickVertices); // Combine all thick vertices
             }
         }
 
@@ -440,17 +385,56 @@ namespace TiledRenderTest.Shapes
             MarkDirty();
         }
 
+        private void ClearBuffers()
+        {
+            triangleIndices = [];
+            sides = [];
+            triangleVertices = [];
+            filledVertices = [];
+            perimeterVertices = [];
+            thickVertices = [];
+        }
+
+        private void UpdateBoundingBox()
+        {
+            if (points == null || points.Length == 0)
+            {
+                _boundingBox = new BoundingBox();
+                return;
+            }
+
+            float minX = float.MaxValue, minY = float.MaxValue;
+            float maxX = float.MinValue, maxY = float.MinValue;
+
+            foreach (var point in points)
+            {
+                if (point.X < minX) minX = point.X;
+                if (point.X > maxX) maxX = point.X;
+                if (point.Y < minY) minY = point.Y;
+                if (point.Y > maxY) maxY = point.Y;
+            }
+
+            _boundingBox = new BoundingBox(
+                new Vector3(minX, minY, 0),
+                new Vector3(maxX, maxY, 0)
+            );
+        }
+
         public virtual bool Contains(Vector2 point)
         {
             // This method can be overridden in derived classes to implement specific containment logic
             RebuildIfDirty();
 
-            if (triangles == null || triangles.Length == 0)
+            var point3D = new Vector3(point, 0);
+            if (!_boundingBox.Contains(point3D).HasFlag(ContainmentType.Contains))
                 return false;
 
-            foreach (var tri in triangles)
+            if (Triangles?.Length == 0) return false;
+
+            // Use for loop instead of foreach for slight performance gain
+            for (int i = 0; i < Triangles.Length; i++)
             {
-                if (tri.Contains(point))
+                if (Triangles[i].Contains(point))
                     return true;
             }
 
@@ -459,12 +443,18 @@ namespace TiledRenderTest.Shapes
 
         public virtual bool Intersects(Shape otherShape)
         {
-            // This method can be overridden in derived classes to implement specific intersection logicRebuildIfDirty();
+            RebuildIfDirty();
+            otherShape.RebuildIfDirty();
 
-            if (triangles == null || triangles.Length == 0)
+            // Quick bounding box check first
+            if (!_boundingBox.Intersects(otherShape._boundingBox))
                 return false;
 
-            foreach (var tri in triangles)
+            // Check for triangle intersections
+            if (Triangles == null || Triangles.Length == 0)
+                return false;
+
+            foreach (var tri in Triangles)
             {
                 foreach (var otherTri in otherShape.Triangles)
                 {
@@ -566,10 +556,11 @@ namespace TiledRenderTest.Shapes
 
             // Create triangle vertices using indices
             var triangleVerts = new VertexPositionColor[indices.Length];
+            var outputSpan = new Span<VertexPositionColor>(triangleVerts);
+            var sourceSpan = new ReadOnlySpan<VertexPositionColor>(extendedVertices);
+
             for (int i = 0; i < indices.Length; i++)
-            {
-                triangleVerts[i] = extendedVertices[indices[i]];
-            }
+                outputSpan[i] = sourceSpan[indices[i]];
 
             return triangleVerts;
         }
@@ -626,19 +617,22 @@ namespace TiledRenderTest.Shapes
             if (PerimeterVertices == null || PerimeterVertices.Length < 2)
                 return [];
 
-            var lines = new List<VertexPositionColor>();
+            int count = PerimeterVertices.Length;
+            var output = new VertexPositionColor[count * 2];
 
-            for (int i = 0; i < PerimeterVertices.Length - 1; i++)
+            Span<VertexPositionColor> span = output;
+
+            for (int i = 0; i < count - 1; i++)
             {
-                lines.Add(PerimeterVertices[i]);
-                lines.Add(PerimeterVertices[i + 1]);
+                span[i * 2] = PerimeterVertices[i];
+                span[i * 2 + 1] = PerimeterVertices[i + 1];
             }
 
             // Close the loop
-            lines.Add(PerimeterVertices[^1]);
-            lines.Add(PerimeterVertices[0]);
+            span[(count - 1) * 2] = PerimeterVertices[^1];
+            span[(count - 1) * 2 + 1] = PerimeterVertices[0];
 
-            return [.. lines];
+            return output;
         }
 
         protected virtual BasicTriangle[] GenerateBasicTriangles(Vector2[] vertices, int[] indices)
@@ -653,17 +647,21 @@ namespace TiledRenderTest.Shapes
             Array.Copy(vertices, 0, extendedPoints, 0, uniqueCount);
             extendedPoints[uniqueCount] = center;
 
-            var result = new BasicTriangle[indices.Length / 3];
-            for (int i = 0; i < indices.Length; i += 3)
-            {
-                Vector2 a = extendedPoints[indices[i]];
-                Vector2 b = extendedPoints[indices[i + 1]];
-                Vector2 c = extendedPoints[indices[i + 2]];
+            var triangleSpan = new Span<BasicTriangle>(new BasicTriangle[indices.Length / 3]);
+            var pointsSpan = new ReadOnlySpan<Vector2>(extendedPoints);
+            var indexSpan = new ReadOnlySpan<int>(indices);
 
-                result[i / 3] = new BasicTriangle(a, b, c);
+            for (int i = 0; i < triangleSpan.Length; i++)
+            {
+                int idx = i * 3;
+                triangleSpan[i] = new BasicTriangle(
+                    pointsSpan[indexSpan[idx]],
+                    pointsSpan[indexSpan[idx + 1]],
+                    pointsSpan[indexSpan[idx + 2]]
+                );
             }
 
-            return result;
+            return triangleSpan.ToArray(); // Or store as field if preferred
         }
 
         protected static bool PointInTriangle(Vector2 pt, Vector2 a, Vector2 b, Vector2 c)

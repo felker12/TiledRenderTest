@@ -40,31 +40,6 @@ namespace TiledRenderTest.Shapes
             return base.Contains(point); // Ensure points are updated
         }
 
-        /*
-        public override bool Contains(Vector2 point)
-        {
-            RebuildIfDirty(); // ensure points are updated
-
-            if (points == null || points.Length < 3)
-                return false;
-
-            int crossings = 0;
-            for (int i = 0, j = points.Length - 1; i < points.Length; j = i++)
-            {
-                Vector2 a = points[i];
-                Vector2 b = points[j];
-
-                if (((a.Y > point.Y) != (b.Y > point.Y)) &&
-                    (point.X < (b.X - a.X) * (point.Y - a.Y) / (b.Y - a.Y + float.Epsilon) + a.X))
-                {
-                    crossings++;
-                }
-            }
-
-            return (crossings % 2) == 1;
-        }
-        */
-
         public static Vector2[] CreateStarOutline(Vector2 center, float outerRadius, float innerRadius, int numPoints = 5)
         {
             var points = new Vector2[numPoints * 2 + 1];

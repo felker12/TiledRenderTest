@@ -8,6 +8,15 @@ namespace TiledRenderTest.Shapes
         public int Width { get; set; } = 1;
         public int Height { get; set; } = 1;
 
+        public override Vector2 Center
+        {
+            get
+            {
+                // For rectangles, the center is the position plus half width and height
+                return Position + new Vector2(Width / 2f, Height / 2f);
+            }
+        }
+
         public Rectangle(int x, int y, int width, int height) :
             this(new Vector2(x, y), width, height) { }
 
@@ -61,7 +70,7 @@ namespace TiledRenderTest.Shapes
 
         public override bool Intersects(Shape otherShape)
         {
-            RebuildIfDirty();
+            otherShape.RebuildIfDirty();
 
             if (points == null || points.Length < 4 || otherShape.Points == null || otherShape.Points.Length < 3)
                 return false;

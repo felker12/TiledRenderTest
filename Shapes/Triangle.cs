@@ -33,7 +33,7 @@ namespace TiledRenderTest.Shapes
 
         private void SetTrianglePoints()
         {
-            points = [Position, Position2, Position3, Position];
+            Points = [Position, Position2, Position3, Position];
         }
 
         public void UpdatePositions(Vector2 position, Vector2 position2, Vector2 position3)
@@ -52,22 +52,6 @@ namespace TiledRenderTest.Shapes
                 return false;
 
             return PointInTriangle(point, points[0], points[1], points[2]);
-        }
-
-        public override void DrawFilledUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
-        {
-            basicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
-
-            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                graphicsDevice.DrawUserPrimitives(
-                    PrimitiveType.TriangleList,
-                    PerimeterVertices,
-                    0,
-                    1 // one triangle = 1 primitive
-                );
-            }
         }
 
         public override string ToString()

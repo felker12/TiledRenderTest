@@ -26,8 +26,6 @@ namespace TiledRenderTest
 
         private TileMap tileMap;
         private TileMap DungeonMap;
-
-        List<Shape> Shapes { get; set; } = [];
         public Random Random { get; set; } = new();
 
         public double totalTime = 0f;
@@ -67,34 +65,10 @@ namespace TiledRenderTest
                 Rotate = true
             };
 
-            ShapeManager.AddRandomShapes(10, new(-400, -400), new(400, 400));
-            var ellipse = new Ellipse(new Vector2(200, 200), 120, 40, 32, Color.Orange) { Rotate = true };
-            ShapeManager.Add(ellipse);
-
-            //CreateShapes();
-
-            /*
-            Shapes.Add(new Star(new Vector2(-300, -200), 6) 
-            { 
-                Rotate = true 
-            });
-            Shapes.Add(new Triangle(new Vector2(120,120), new Vector2(150, 180), new Vector2(200,200))
-            { 
-                Rotate = true 
-            });
-            Shapes.Add(new Circle(new Vector2(200, -200), 50, 32, Color.Aquamarine)
-            {
-                Rotate = true,
-                RotationSpeedDegreesPerSecond = 30
-            });
-
-            var rect1 = new Shapes.Rectangle(100, 100, 50, 50);
-            var rect2 = new Shapes.Rectangle(120, 120, 50, 50);
-
-            Shapes.Add(rect1);
-            Shapes.Add(rect2);
-            Shapes.Add(Rectangle);
-            */
+            ShapeManager.AddRandomShapes(150, new(-400, -400), new(400, 400));
+            var ellipse = new Ellipse(new Vector2(200, 200), 80, 40, 64, Color.Orange) { Rotate = true };
+            ShapeManager.AddShape(ellipse);
+            ShapeManager.AddShape(Rectangle);
         }
 
         protected override void LoadContent()
@@ -138,22 +112,12 @@ namespace TiledRenderTest
             //Stopwatch stopwatch = new();
             //stopwatch.Start();
 
-            foreach (var shape in Shapes)
-            {
-                shape.Update(gameTime);
-
-                if(shape.Intersects(Player.ShapeRectangle))
-                    shape.Color = Color.Red;
-                else
-                    shape.Color = shape.DefaultColor;
-            }
-
             foreach (var shape in ShapeManager.Shapes)
             {
                 shape.Update(gameTime);
 
                 if (shape.Intersects(Player.ShapeRectangle))
-                    shape.Color = Color.Red;
+                   shape.Color = Color.Red;
                 else
                     shape.Color = shape.DefaultColor;
             }
@@ -203,11 +167,6 @@ namespace TiledRenderTest
             //ShapeManager.DrawFilledUsingPrimitives(GraphicsDevice, Camera.Transformation);
             //ShapeManager.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 4);
 
-            foreach (var shape in Shapes)
-            {
-                shape.DrawTriangulated(SpriteBatch);
-            }
-
             Rectangle.DrawFilled(SpriteBatch);
 
             Player.Draw(SpriteBatch);
@@ -230,73 +189,6 @@ namespace TiledRenderTest
             texture.SetData([color]);
 
             return texture;
-        }
-
-
-        public void CreateShapes()
-        {
-            Random = new Random();
-            Shapes.Clear();
-
-            float x, y;
-            int r, g, b, alpha;
-            Vector2 position;
-            Color color;
-            int speed;
-
-            for (int i = 0; i < 5; i++)
-            {
-                x = Random.Next(-400, 400);
-                y = Random.Next(-400, 400);
-
-                r = Random.Next(0, 256);
-                g = Random.Next(0, 256);
-                b = Random.Next(0, 256);
-                alpha = Random.Next(150, 256);
-                speed = Random.Next(60, 151);
-
-                color = new(r, g, b, alpha);
-                position = new(x, y);
-                /*
-                if (Random.Next(0, 2) == 0)
-                {
-                    Shapes.Add(new Circle(new(Random.Next(-500, 500), Random.Next(-500, 500)), Random.Next(20, 100), Random.Next(3, 64), Color.Aquamarine));
-                }
-                else
-                {
-                    Shapes.Add(new Star(new(Random.Next(-500, 500), Random.Next(-500, 500)), Color.Aquamarine, Random.Next(3, 10), Random.Next(50, 100), Random.Next(10, 50)));
-                }
-                */
-
-                Shapes.Add(new Star(position, color, Random.Next(3, 10), Random.Next(70, 150), Random.Next(40, 70))
-                {
-                    Rotate = true,
-                    RotationSpeedDegreesPerSecond = speed,
-                });
-
-                Shapes.Add(new Circle(position, Random.Next(20, 100), Random.Next(3, 64), color)
-                {
-                    Rotate = true,
-                    RotationSpeedDegreesPerSecond = speed,
-                });
-
-                Shapes.Add(new Shapes.Rectangle(position, Random.Next(50, 150), Random.Next(50, 150), color)
-                {
-                    Rotate = true,
-                    RotationSpeedDegreesPerSecond = speed,
-                });
-
-                /*
-                Shapes.Add(new
-                    Triangle(position,
-                    position + new Vector2(0, 100), 
-                    position + new Vector2(50, 0))
-                {
-                    Rotate = true,
-                    RotationSpeedDegreesPerSecond = speed,
-                });
-                */
-            }
         }
     }
 }

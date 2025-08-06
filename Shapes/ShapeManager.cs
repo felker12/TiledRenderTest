@@ -2,11 +2,19 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace TiledRenderTest.Shapes
 {
     public class ShapeManager 
     {
+        private readonly List<VertexPositionColor> _perimeterTemp = [];
+        private readonly List<VertexPositionColor> _filledTemp = [];
+        private readonly List<VertexPositionColor> _triangleTemp = [];
+        private readonly List<VertexPositionColor> _thickTemp = [];
+
         public List<Shape> Shapes { get; private set; } = [];
         private Random Random { get; set; } = new();
 
@@ -20,35 +28,30 @@ namespace TiledRenderTest.Shapes
 
         public void Update(GameTime gameTime)
         {
-            PerimeterVertices = [];
-            FilledVertices = [];
-            TriangleVertices = [];
-            ThickLineVertices = [];
+            _perimeterTemp.Clear();
+            _filledTemp.Clear();
+            _triangleTemp.Clear();
+            _thickTemp.Clear();
+
 
             foreach (var shape in Shapes)
             {
                 shape.Update(gameTime);
                 shape.RebuildThickVertices(shape.LineThickness);
 
-                PerimeterVertices = [.. PerimeterVertices, .. shape.GetOutlineAsLineList()];
-                FilledVertices = [.. FilledVertices, .. shape.FilledVertices];
-                TriangleVertices = [.. TriangleVertices, .. shape.TriangleVertices];
-                ThickLineVertices = [.. ThickLineVertices, .. shape.ThickLineVertices];
+                _perimeterTemp.AddRange(shape.GetOutlineAsLineList());
+                _filledTemp.AddRange(shape.FilledVertices);
+                _triangleTemp.AddRange(shape.TriangleVertices);
+                _thickTemp.AddRange(shape.ThickLineVertices);
             }
+
+            PerimeterVertices = [.. _perimeterTemp];
+            FilledVertices = [.. _filledTemp];
+            TriangleVertices = [.. _triangleTemp];
+            ThickLineVertices = [.. _thickTemp];
         }
 
-        //SpriteBatch Draw calls    
-        public virtual void Draw(SpriteBatch spriteBatch)
-        {
-            foreach (var shape in Shapes)
-                shape.Draw(spriteBatch);
-        }
-
-        public virtual void DrawOutline(SpriteBatch spriteBatch, Color outlineColor, int outlineThickness = 1)
-        {
-            foreach (var shape in Shapes)
-                shape.DrawOutline(spriteBatch, outlineColor, outlineThickness);
-        }
+        //SpriteBatch Draw calls 
 
         public virtual void DrawOutline(SpriteBatch spriteBatch, int outlineThickness = 1)
         {
@@ -74,18 +77,12 @@ namespace TiledRenderTest.Shapes
                 shape.DrawTriangulated(spriteBatch);
         }
 
-        public virtual void DrawTriangulated(SpriteBatch spriteBatch, Color color)
-        {
-            foreach (var shape in Shapes)
-                shape.DrawTriangulated(spriteBatch, color);
-        }
-
         //GraphicsDevice Draw calls
         public virtual void DrawOutlineUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
             if (PerimeterVertices is null || PerimeterVertices.Length == 0) return;
 
-            BasicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
+            EnsureBasicEffect(graphicsDevice, viewMatrix);
 
             foreach (EffectPass pass in BasicEffect.CurrentTechnique.Passes)
             {
@@ -99,16 +96,11 @@ namespace TiledRenderTest.Shapes
             }
         }
 
-        public virtual void DrawOutlineUsingPrimitives(SpriteBatch spriteBatch, Matrix viewMatrix)
-        {
-            DrawOutlineUsingPrimitives(spriteBatch.GraphicsDevice, viewMatrix);
-        }
-
         public virtual void DrawTriangulatedUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
             if (TriangleVertices is null || TriangleVertices.Length == 0) return;
 
-            BasicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
+            EnsureBasicEffect(graphicsDevice, viewMatrix);
 
             foreach (EffectPass pass in BasicEffect.CurrentTechnique.Passes)
             {
@@ -121,11 +113,12 @@ namespace TiledRenderTest.Shapes
                 );
             }
         }
+
         public virtual void DrawFilledUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix)
         {
             if (FilledVertices is null || FilledVertices.Length == 0) return;
 
-            BasicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
+            EnsureBasicEffect(graphicsDevice, viewMatrix);
 
             foreach (EffectPass pass in BasicEffect.CurrentTechnique.Passes)
             {
@@ -143,7 +136,7 @@ namespace TiledRenderTest.Shapes
         {
             if (ThickLineVertices is null || ThickLineVertices.Length == 0) return;
 
-            BasicEffect = InitializeBasicEffect(graphicsDevice, viewMatrix);
+            EnsureBasicEffect(graphicsDevice, viewMatrix); ;
 
             foreach (EffectPass pass in BasicEffect.CurrentTechnique.Passes)
             {
@@ -157,21 +150,34 @@ namespace TiledRenderTest.Shapes
             }
         }
 
-        public void Add(Shape shape)
+        //Utility Methods
+        public void AddShape(Shape shape)
         {
             ArgumentNullException.ThrowIfNull(shape);
             Shapes.Add(shape);
         }
 
-        public void Remove(Shape shape)
+        public void RemoveShape(Shape shape)
         {
             ArgumentNullException.ThrowIfNull(shape);
             Shapes.Remove(shape);
         }
 
-        public void Clear()
+        public void ClearShapes()
         {
             Shapes.Clear();
+        }
+
+        #nullable enable        
+        public Shape? GetShapeAtPoint(Vector2 point)
+        {
+            return Shapes.FirstOrDefault(shape => shape.Contains(point));
+        }
+        #nullable disable
+
+        public IEnumerable<Shape> GetIntersectingShapes(Shape other)
+        {
+            return Shapes.Where(s => s.Intersects(other));
         }
 
         public static BasicEffect InitializeBasicEffect(GraphicsDevice graphicsDevice, Matrix viewMatrix)
@@ -186,10 +192,28 @@ namespace TiledRenderTest.Shapes
             };
         }
 
+        public void EnsureBasicEffect(GraphicsDevice graphicsDevice, Matrix viewMatrix)
+        {
+            BasicEffect ??= new BasicEffect(graphicsDevice)
+                {
+                    VertexColorEnabled = true,
+                    World = Matrix.Identity,
+                    View = viewMatrix,
+                    Projection = Matrix.CreateOrthographicOffCenter(
+                    0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height, 0, 0, 1)
+                };
+
+            BasicEffect.View = viewMatrix;
+            BasicEffect.Projection = Matrix.CreateOrthographicOffCenter(
+                0, graphicsDevice.Viewport.Width,
+                graphicsDevice.Viewport.Height, 0,
+                0, 1);
+        }
+
         public void AddRandomShapes(int amount, Vector2 startPos, Vector2 endPos)
         {
             Random = new Random();
-            Clear();
+            ClearShapes();
 
             float x, y;
             int r, g, b, alpha;

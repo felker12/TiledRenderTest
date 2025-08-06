@@ -8,9 +8,7 @@ namespace TiledRenderTest.Shapes
         public Vector2 Position1 { get; init; } = pos1;
         public Vector2 Position2 { get; init; } = pos2;
         public Vector2 Position3 { get; init; } = pos3;
-        public (Vector2, Vector2)[] Edges { get; } = [(pos1, pos2),
-                 (pos2, pos3),
-                 (pos3, pos1)];
+        public readonly (Vector2, Vector2)[] Edges => [(Position1, Position2), (Position2, Position3), (Position3, Position1)];
 
         public readonly bool Contains(Vector2 pt)
         {
@@ -71,6 +69,6 @@ namespace TiledRenderTest.Shapes
             return u >= 0 && u <= 1 && v >= 0 && v <= 1;
         }
 
-        public override string ToString() => $"Triangle({Position1}, {Position2}, {Position3})";
+        public override readonly string ToString() => $"Triangle({Position1}, {Position2}, {Position3})";
     }
 }
