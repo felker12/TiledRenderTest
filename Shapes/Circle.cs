@@ -14,9 +14,9 @@ namespace TiledRenderTest.Shapes
             Initialize(); 
         }
 
-        public Circle(Vector2 center, int radius, int points, Color color)
+        public Circle(Vector2 position, int radius, Color color, int points = 32)
         {
-            Position = center;
+            Position = position;
             Radius = radius;
             PointCount = points;
             Color = color;

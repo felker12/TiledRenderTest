@@ -248,7 +248,7 @@ namespace TiledRenderTest.Shapes
                         break;
 
                     case 1:
-                        Shapes.Add(new Circle(position, Random.Next(20, 100), Random.Next(3, 64), color)
+                        Shapes.Add(new Circle(position, Random.Next(20, 100), color, Random.Next(3, 64))
                         {
                             Rotate = true,
                             RotationSpeedDegreesPerSecond = speed,

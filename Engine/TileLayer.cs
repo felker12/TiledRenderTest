@@ -14,8 +14,8 @@ namespace TiledRenderTest.Engine
         // The width and height of each tile in pixels
         public int TileHeight { get; set; } = 16;
         public int TileWidth { get; set; } = 16;
-        public int WidthInTiles { get; set; } = 0;
-        public int HeightInTiles { get; set; } = 0;
+        public int WidthInTiles => Width;
+        public int HeightInTiles => Height;
 
         // The list of all tiles in this layer (can include both static and animated tiles)
         public List<Tile> Tiles { get; set; } = [];

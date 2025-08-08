@@ -15,9 +15,9 @@ namespace TiledRenderTest.Shapes
             Initialize();
         }
 
-        public Ellipse(Vector2 center, int radiusX, int radiusY, int points, Color color)
+        public Ellipse(Vector2 position, int radiusX, int radiusY, Color color, int points = 32)
         {
-            Position = center;
+            Position = position;
             RadiusX = radiusX;
             RadiusY = radiusY;
             PointCount = points;

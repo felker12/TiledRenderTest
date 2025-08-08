@@ -1,7 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace TiledRenderTest
+namespace TiledRenderTest.Entities
 {
     internal class Sprite
     {
@@ -22,7 +22,6 @@ namespace TiledRenderTest
         public Sprite(GraphicsDevice graphicsDevice)
         {
             Texture = CreateTextureFromColor(Color, graphicsDevice);
-            Position = new(50, 50);
         }
 
         public virtual void Draw(SpriteBatch spriteBatch)

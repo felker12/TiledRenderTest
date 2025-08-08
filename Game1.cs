@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using TiledRenderTest.Engine;
+using TiledRenderTest.Entities;
 using TiledRenderTest.Shapes;
 
 namespace TiledRenderTest
@@ -56,7 +57,7 @@ namespace TiledRenderTest
             Sprite2.Texture = CreateTextureFromColor(Color.Red);
             Sprite2.Position = new(300, 50);
             Player.Texture = CreateTextureFromColor(Color.White);
-            Player.Position = new(-40, 0);
+            Player.Position = new(-40, -100);
             Player.Color = Color.DarkBlue;
             Camera = new(ScreenWidth, ScreenHeight);
 
@@ -65,8 +66,10 @@ namespace TiledRenderTest
                 Rotate = true
             };
 
-            ShapeManager.AddRandomShapes(150, new(-400, -400), new(400, 400));
-            var ellipse = new Ellipse(new Vector2(200, 200), 80, 40, 64, Color.Orange) { Rotate = true };
+            ShapeManager.AddShape(Rectangle);
+
+            ShapeManager.AddRandomShapes(1, new(-400, -400), new(400, 400));
+            var ellipse = new Ellipse(new Vector2(200, 200), 80, 40, Color.Orange, 64) { Rotate = true };
             ShapeManager.AddShape(ellipse);
             ShapeManager.AddShape(Rectangle);
         }
@@ -77,11 +80,11 @@ namespace TiledRenderTest
 
             // TODO: use this.Content to load your game content here
 
-            tileMap = new(Content);
-            tileMap.LoadFromTmx("Content/Catacombs1.tmx");
+            tileMap = new(Content, "Content/Catacombs1.tmx");
 
-            DungeonMap = new(Content);
-            DungeonMap.LoadFromTmx("Content/Dungeon.tmx");
+            DungeonMap = new(Content, "Content/Dungeon.tmx");
+
+            //TileMap mapTest = new(TmxReader.LoadMapFromTmx("Content/Dungeon.tmx", Content));
         }
 
         protected override void Update(GameTime gameTime)
@@ -159,6 +162,7 @@ namespace TiledRenderTest
             //Sprite.Draw(SpriteBatch);
             //Sprite2.Draw(SpriteBatch);
 
+
             //ShapeManager.DrawOutline(SpriteBatch);
             //ShapeManager.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 12);
             //ShapeManager.DrawTriangulated(SpriteBatch);
@@ -167,7 +171,7 @@ namespace TiledRenderTest
             //ShapeManager.DrawFilledUsingPrimitives(GraphicsDevice, Camera.Transformation);
             //ShapeManager.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 4);
 
-            Rectangle.DrawFilled(SpriteBatch);
+            //Rectangle.DrawFilled(SpriteBatch);
 
             Player.Draw(SpriteBatch);
             SpriteBatch.End();
