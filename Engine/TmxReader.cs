@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Content;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
@@ -32,7 +33,7 @@ namespace TiledRenderTest.Engine
 
             // Load tilesets first as they're needed for tile layers
             List<TileSet> tileSets = LoadTileSetsFromTmx(xDoc, tmxPath, content);
-            List<Layer> layers = LoadLayersFromTmx(xDoc, tmxPath, tileSets);
+            List<Layer> layers = LoadLayersFromTmx(xDoc, tileSets);
 
             return new(layers, tileSets, content);
         }
@@ -90,16 +91,21 @@ namespace TiledRenderTest.Engine
             return tileSets;
         }
 
-        public static List<Layer> LoadLayersFromTmx(XDoc xDoc, string tmxPath, List<TileSet> tileSets)
+        public static List<Layer> LoadLayersFromTmx(XDoc xDoc, List<TileSet> tileSets)
         {
             List<Layer> layers = [];
             var map = xDoc.Map;
             int tileWidth = xDoc.TileWidth;
-            int tileHeight = xDoc.TileHeight;
+            int tileHeight = xDoc.TileHeight; 
 
             // Load all layers in order they appear in the TMX file
             foreach (var layerElement in map.Elements().Where(e => e.Name == "layer" || e.Name == "objectgroup"))
             {
+                bool layerVisible = true; // default
+                var visibleAttr = layerElement.Attribute("visible");
+                if (visibleAttr != null)
+                    layerVisible = ((int)visibleAttr) != 0; //if visible = 0 then the object should not be visible
+
                 if (layerElement.Name == "layer")
                 {
                     // Handle tile layer
@@ -116,6 +122,7 @@ namespace TiledRenderTest.Engine
                         TileHeight = tileHeight,
                         ID = int.Parse(layerElement.Attribute("id").Value),
                         Name = layerElement.Attribute("name")?.Value ?? "Layer" + layerElement.Attribute("id").Value,
+                        Visible = layerVisible
                     };
 
                     for (int y = 0; y < height; y++)
@@ -143,7 +150,6 @@ namespace TiledRenderTest.Engine
                     }
 
                     layers.Add(tileLayer);
-                    //Debug.WriteLine($"Loaded layer: {tileLayer.Name} (ID: {tileLayer.ID}) with {tileLayer.Tiles.Count} tiles.");
                 }
                 else if (layerElement.Name == "objectgroup")
                 {
@@ -154,6 +160,7 @@ namespace TiledRenderTest.Engine
                         Name = (string)layerElement.Attribute("name") ?? string.Empty,
                         Width = (int?)layerElement.Attribute("width") ?? 0,
                         Height = (int?)layerElement.Attribute("height") ?? 0,
+                        Visible = layerVisible,
                     };
 
                     foreach (var obj in layerElement.Elements("object"))
@@ -168,6 +175,12 @@ namespace TiledRenderTest.Engine
                             Height = (float?)obj.Attribute("height") ?? 0,
                         };
 
+                        var vis = obj.Attribute("visible");
+                        if (vis != null)
+                            mapObject.Visible = ((int)vis) != 0; //if visible = 0 then the object should not be visible
+                        else
+                            mapObject.Visible = true;
+
                         var propertiesElement = obj.Element("properties");
                         if (propertiesElement != null)
                         {
@@ -179,6 +192,32 @@ namespace TiledRenderTest.Engine
                                     Value = (string)prop.Attribute("value") ?? string.Empty
                                 });
                             }
+                        }
+
+                        if (obj.Element("ellipse") != null)
+                            mapObject.MapObjectShape = MapObjectShape.Ellipse;
+                        else if (obj.Element("polygon") != null)
+                            mapObject.MapObjectShape = MapObjectShape.Polygon;
+                        else
+                            mapObject.MapObjectShape = MapObjectShape.Rectangle;
+
+                        var polygonElement = obj.Element("polygon");
+                        if (polygonElement != null)
+                        {
+                            string pointsString = polygonElement.Attribute("points").Value;
+                            var points = pointsString
+                                .Split(' ') // split by spaces into each "x,y"
+                                .Select(pair =>
+                                {
+                                    var coords = pair.Split(',');
+                                    float px = float.Parse(coords[0], System.Globalization.CultureInfo.InvariantCulture);
+                                    float py = float.Parse(coords[1], System.Globalization.CultureInfo.InvariantCulture);
+                                    return new Vector2(px, py);
+                                })
+                                .ToArray();
+
+                            // Store in your MapObject
+                            mapObject.PolygonPoints = points;
                         }
 
                         objectLayer.MapObjects.Add(mapObject);

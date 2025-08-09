@@ -27,7 +27,6 @@ namespace TiledRenderTest
 
         private TileMap tileMap;
         private TileMap DungeonMap;
-        public Random Random { get; set; } = new();
 
         public double totalTime = 0f;
         public int count = 0;   
@@ -83,6 +82,28 @@ namespace TiledRenderTest
             tileMap = new(Content, "Content/Catacombs1.tmx");
 
             DungeonMap = new(Content, "Content/Dungeon.tmx");
+            EntityLayer entityLayer = new();
+            entityLayer.AddEntity(Player);
+
+            //DungeonMap.AddLayer(entityLayer);
+            DungeonMap.InsertLayerAt(2, entityLayer);
+
+            foreach (var layer in DungeonMap.Layers)
+            {
+                //Debug.WriteLine($"Layer: {layer.Name}, Width: {layer.Width}, Height: {layer.Height}");
+
+                if(layer is ObjectLayer objectLayer)
+                {
+                    Debug.WriteLine(objectLayer.ToString());
+
+                    foreach(MapObject obj in objectLayer.MapObjects)
+                    {
+                        Debug.WriteLine(obj.ToString());
+                    }
+                }
+            }
+
+            //Debug.WriteLine(DungeonMap.Layers.Count);
 
             //TileMap mapTest = new(TmxReader.LoadMapFromTmx("Content/Dungeon.tmx", Content));
         }
@@ -92,14 +113,15 @@ namespace TiledRenderTest
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
+            Camera.Update(Player.Position);
+            //Player.Update(gameTime);
+
             // TODO: Add your update logic here
             DungeonMap.Update(gameTime);
 
             //Sprite.Update(gameTime);
             //Sprite2.Update(gameTime);
 
-            Player.Update(gameTime);
-            Camera.Update(Player.Position);
 
             base.Update(gameTime);
 
@@ -132,7 +154,6 @@ namespace TiledRenderTest
             //count++;
 
             //Debug.WriteLine($"Average Time: {AverageTime} ms, Total Time: {totalTime}");
-
         }
 
 
@@ -142,7 +163,6 @@ namespace TiledRenderTest
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             // TODO: Add your drawing code here
-
 
             //Stopwatch stopwatch = new();
             //stopwatch.Start();
@@ -157,11 +177,20 @@ namespace TiledRenderTest
                 Camera.Transformation);
 
             //tileMap.Draw(SpriteBatch, Camera.Transformation);
-            //DungeonMap.Draw(SpriteBatch);
+            DungeonMap.Draw(SpriteBatch);
+            SpriteBatch.End();
+
+            SpriteBatch.Begin(
+               SpriteSortMode.Deferred,
+               BlendState.AlphaBlend,
+               SamplerState.PointClamp,
+               null,
+               null,
+               null,
+               Camera.Transformation);
 
             //Sprite.Draw(SpriteBatch);
             //Sprite2.Draw(SpriteBatch);
-
 
             //ShapeManager.DrawOutline(SpriteBatch);
             //ShapeManager.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 12);
@@ -173,10 +202,8 @@ namespace TiledRenderTest
 
             //Rectangle.DrawFilled(SpriteBatch);
 
-            Player.Draw(SpriteBatch);
+            //Player.Draw(SpriteBatch);
             SpriteBatch.End();
-
-
 
             //stopwatch.Stop();
 

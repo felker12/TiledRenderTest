@@ -9,8 +9,8 @@ namespace TiledRenderTest.Engine
 {
     internal class TileMap
     {
-        private List<Layer> Layers { get; set; } = [];
-        private List<TileSet> TileSets { get; set; } = [];
+        public List<Layer> Layers { get; private set; } = [];
+        public List<TileSet> TileSets { get; private set; } = [];
         private ContentManager Content { get; set; }
         public int LongestLayerWidthInTiles { get; set; } = 0;
         public int LongestLayerWidthInPixels { get; set; } = 0;
@@ -24,7 +24,7 @@ namespace TiledRenderTest.Engine
 
             // Load tilesets first as they're needed for tile layers
             TileSets = TmxReader.LoadTileSetsFromTmx(xDoc, tmxPath, content);
-            Layers = TmxReader.LoadLayersFromTmx(xDoc, tmxPath, TileSets);
+            Layers = TmxReader.LoadLayersFromTmx(xDoc, TileSets);
 
             CalculateLongestLayerDimensions();
         }
@@ -51,6 +51,10 @@ namespace TiledRenderTest.Engine
         {
             foreach (var layer in Layers)
             {
+                // Only update layers that are visible
+                if (!layer.Visible)
+                    continue;
+
                 layer.Update(gameTime);
             }
         }
@@ -59,6 +63,10 @@ namespace TiledRenderTest.Engine
         {
             foreach (var layer in Layers)
             {
+                // Only draw layers that are visible
+                if (!layer.Visible)
+                    continue;
+
                 layer.Draw(spriteBatch);
             }
         }

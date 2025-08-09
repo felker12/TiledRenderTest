@@ -9,7 +9,7 @@ namespace TiledRenderTest.Engine
         public string Name { get; set; } = string.Empty;
         public int Width { get; set; } = 1;
         public int Height { get; set; } = 1;
-
+        public bool Visible { get; set; } = true;
 
         public Layer()
         {

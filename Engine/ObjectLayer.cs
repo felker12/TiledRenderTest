@@ -6,7 +6,7 @@ namespace TiledRenderTest.Engine
 {
     public class ObjectLayer : Layer
     {
-        public List<MapObject> MapObjects { get; set; } = new();
+        public List<MapObject> MapObjects { get; set; } = [];
 
         public ObjectLayer() : base() { }
 

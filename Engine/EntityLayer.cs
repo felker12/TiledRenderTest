@@ -25,5 +25,20 @@ namespace TiledRenderTest.Engine
                 entity.Update(gameTime);
             }
         }
+
+        public void AddEntity(Entity entity)
+        {
+            EntityManager.Add(entity);
+        }
+
+        public void RemoveEntity(Entity entity)
+        {
+            EntityManager.Remove(entity);
+        }
+
+        public void ClearEntities()
+        {
+            EntityManager.Clear();
+        }
     }
 }
