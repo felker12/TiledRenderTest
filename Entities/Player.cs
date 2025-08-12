@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Input;
 
 namespace TiledRenderTest.Entities
 {
-    internal class Player : Entity
+    public class Player : Entity
     {
         public Player() : base()
         {

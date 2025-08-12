@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace TiledRenderTest.Entities
 {
-    internal class Entity : Sprite
+    public class Entity : Sprite
     {
 
         public Entity() { }

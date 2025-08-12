@@ -3,8 +3,6 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TiledRenderTest.Shapes
 {
@@ -36,6 +34,8 @@ namespace TiledRenderTest.Shapes
 
             foreach (var shape in Shapes)
             {
+                shape.Motion = new(1, 1);
+
                 shape.Update(gameTime);
                 shape.RebuildThickVertices(shape.LineThickness);
 
@@ -275,38 +275,6 @@ namespace TiledRenderTest.Shapes
                         });
                         break;
                 }
-
-
-                /*
-                Shapes.Add(new Star(position, color, Random.Next(3, 10), Random.Next(70, 150), Random.Next(40, 70))
-                {
-                    Rotate = true,
-                    RotationSpeedDegreesPerSecond = speed,
-                });
-                */
-
-                /*
-                Shapes.Add(new Circle(position, Random.Next(20, 100), Random.Next(3, 64), color)
-                {
-                    Rotate = true,
-                    RotationSpeedDegreesPerSecond = speed,
-                });
-
-                Shapes.Add(new Shapes.Rectangle(position, Random.Next(50, 150), Random.Next(50, 150), color)
-                {
-                    Rotate = true,
-                    RotationSpeedDegreesPerSecond = speed,
-                });
-
-                Shapes.Add(new
-                    Triangle(position,
-                    position + new Vector2(0, 100), 
-                    position + new Vector2(50, 0))
-                {
-                    Rotate = true,
-                    RotationSpeedDegreesPerSecond = speed,
-                });
-                */
             }
         }
     }

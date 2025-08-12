@@ -121,7 +121,6 @@ namespace TiledRenderTest.Shapes
         public void Draw(SpriteBatch spriteBatch, Texture2D texture, int thickness = 1)
         {
             spriteBatch.Draw(texture, Position, null, Color, Angle, Vector2.Zero, new Vector2(Length, thickness), SpriteEffects.None, 0f);
-
         }
 
         public void Draw(SpriteBatch spriteBatch, Texture2D texture, Color color, int thickness = 1)
@@ -186,8 +185,6 @@ namespace TiledRenderTest.Shapes
                     thickVertices = null;
                 }
             }
-
-            // If you ever add unmanaged resources, dispose them here
 
             disposed = true;
         }

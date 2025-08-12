@@ -2,7 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 
 namespace TiledRenderTest.Shapes
 {
@@ -50,6 +50,31 @@ namespace TiledRenderTest.Shapes
         public int LineThickness { get; protected set; } = 1; // Default line thickness
         //public virtual BasicTriangle[] Triangles { get { return triangles; } }
         public virtual BasicTriangle[] Triangles { get; set; }
+        public Vector2 Motion { get; set; } = Vector2.Zero;
+        public float Speed { get; set; } = 15f;
+
+        public void SetPosition(Vector2 newPosition)
+        {
+            Vector2 delta = newPosition - Position; // Calculate the delta from the current position
+            Position = newPosition;
+
+            // Update all points by the delta
+            if (points != null && points.Length > 0)
+            {
+                for (int i = 0; i < points.Length; i++)
+                    points[i] += delta;
+
+                MarkDirty();
+            }
+        }
+
+        public Shape(Vector2 position, Color color, Vector2[] points)
+        {
+            Position = position;
+            Color = color;
+            DefaultColor = color;
+            Points = points ?? [];
+        }
 
         public Shape(Vector2 position, Color color)
         {
@@ -75,13 +100,12 @@ namespace TiledRenderTest.Shapes
 
         public virtual void Update(GameTime gameTime)
         {
-            if (isDirty)
-                RebuildIfDirty(); // Only rebuild once per frame
+            RebuildIfDirty();
 
             if (Rotate)
-            {
                 PerformRotation(gameTime);
-            }
+
+            SetPosition(Position + Motion * Speed * (float)gameTime.ElapsedGameTime.TotalSeconds);
         }
 
         public virtual void PerformRotation(GameTime gameTime)
@@ -435,6 +459,21 @@ namespace TiledRenderTest.Shapes
             for (int i = 0; i < Triangles.Length; i++)
             {
                 if (Triangles[i].Contains(point))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public virtual bool Contains(Vector2[] points) 
+        {
+            RebuildIfDirty();
+
+            if (points == null || points.Length == 0) return false;
+
+            foreach (var point in points)
+            {
+                if (Contains(point))
                     return true;
             }
 

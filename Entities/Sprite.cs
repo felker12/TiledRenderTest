@@ -1,10 +1,13 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System.Diagnostics;
 
 namespace TiledRenderTest.Entities
 {
-    internal class Sprite
+    public class Sprite
     {
+        Shapes.Rectangle shapeRectangle = null;
+
         public string Name { get; set; } = string.Empty;
         public int Width { get; set; } = 32;
         public int Height { get; set; } = 32;
@@ -15,7 +18,7 @@ namespace TiledRenderTest.Entities
         public float Speed { get; set; } = 250f;
         public Color Color { get; set; } = Color.White;
         public Rectangle Rectangle => new((int)Position.X, (int)Position.Y, Width, Height);
-        public Shapes.Rectangle ShapeRectangle => new(Position, Width, Height, Color);
+        public Shapes.Rectangle ShapeRectangle => shapeRectangle ??= new(Position, Width, Height, Color);
 
         public Sprite() { }
 
@@ -33,6 +36,19 @@ namespace TiledRenderTest.Entities
         public virtual void Update(GameTime gameTime)
         {
             Position += Motion * Speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            ShapeRectangle?.SetPosition(Position);
+
+            if (ShapeRectangle?.Position != Position)
+            {
+                //Debug.WriteLine(ShapeRectangle.Points);
+
+                //ShapeRectangle?.SetPosition(Position);
+
+                //Debug.WriteLine($"Position: {Position}, shape Pos: {ShapeRectangle.Position}"); 
+                //Debug.WriteLine(ShapeRectangle.ToString());
+                //Debug.WriteLine(ShapeRectangle.Points);
+            }
         }
 
         public static Texture2D CreateTextureFromColor(Color color, GraphicsDevice graphicsDevice)

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System.Runtime.InteropServices;
 
 namespace TiledRenderTest.Engine
 {
@@ -7,8 +8,8 @@ namespace TiledRenderTest.Engine
     {
         public int ID { get; set; }
         public string Name { get; set; } = string.Empty;
-        public int Width { get; set; } = 1;
-        public int Height { get; set; } = 1;
+        public float Width { get; set; } = 1f;
+        public float Height { get; set; } = 1f;
         public bool Visible { get; set; } = true;
 
         public Layer()

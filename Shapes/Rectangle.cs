@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+using System.Diagnostics;
+using TiledRenderTest.Engine;
 
 namespace TiledRenderTest.Shapes
 {
@@ -49,12 +50,9 @@ namespace TiledRenderTest.Shapes
                 new Vector2(0, Height) + Position,         // Bottom-left
                 new Vector2(0, 0)  + Position              // Close the loop
             ];
+
+            Debug.WriteLine(string.Join(", ", Points));
         }
-
-        //public override void DrawFilled(SpriteBatch spriteBatch)
-        //{
-        //    spriteBatch.Draw(Texture, Position, Color);
-
 
         public override bool Contains(Vector2 point)
         {

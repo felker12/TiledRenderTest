@@ -4,6 +4,8 @@ using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using TiledRenderTest.Engine.ShapeOutlines;
+using System.Diagnostics;
 
 namespace TiledRenderTest.Engine
 {
@@ -12,19 +14,19 @@ namespace TiledRenderTest.Engine
         public List<Layer> Layers { get; private set; } = [];
         public List<TileSet> TileSets { get; private set; } = [];
         private ContentManager Content { get; set; }
-        public int LongestLayerWidthInTiles { get; set; } = 0;
-        public int LongestLayerWidthInPixels { get; set; } = 0;
-        public int LongestLayerHeightInTiles { get; set; } = 0;
-        public int LongestLayerHeightInPixels { get; set; } = 0;
+        public float LongestLayerWidthInTiles { get; set; } = 0;
+        public float LongestLayerWidthInPixels { get; set; } = 0;
+        public float LongestLayerHeightInTiles { get; set; } = 0;
+        public float LongestLayerHeightInPixels { get; set; } = 0;
 
-        public TileMap(ContentManager content, string tmxPath)
+        public TileMap(ContentManager content, string tmxPath, GraphicsDevice graphicsDevice)
         {
             Content = content; 
             XDoc xDoc = new(tmxPath);
 
             // Load tilesets first as they're needed for tile layers
             TileSets = TmxReader.LoadTileSetsFromTmx(xDoc, tmxPath, content);
-            Layers = TmxReader.LoadLayersFromTmx(xDoc, TileSets);
+            Layers = TmxReader.LoadLayersFromTmx(xDoc, TileSets, graphicsDevice);
 
             CalculateLongestLayerDimensions();
         }
@@ -56,6 +58,23 @@ namespace TiledRenderTest.Engine
                     continue;
 
                 layer.Update(gameTime);
+
+                if(layer is ObjectLayer objectLayer)
+                {
+                    bool insideAnyObject = false;
+
+                    foreach (var mapObject in objectLayer.MapObjects)
+                    {
+                        if (OutlineCollisionDetection.IsPointInsideOutlineDetailed(Game1.Player.ShapeRectangle.Points, mapObject.PolygonPoints))
+                        {
+                            insideAnyObject = true;
+                            break; // Exit early - no need to check remaining objects
+                        }
+                    }
+
+                    // Set color once after checking all objects
+                    Game1.Player.Color = insideAnyObject ? Color.Red : Color.Blue;
+                }
             }
         }
 
@@ -94,10 +113,10 @@ namespace TiledRenderTest.Engine
 
         public void CalculateLongestLayerDimensions()
         {
-            int longestWidth = 0;
-            int longestHeight = 0;
-            int longestWidthInPixels = 0;
-            int longestHeightInPixels = 0;
+            float longestWidth = 0;
+            float longestHeight = 0;
+            float longestWidthInPixels = 0;
+            float longestHeightInPixels = 0;
 
             foreach (var layer in Layers)
             {

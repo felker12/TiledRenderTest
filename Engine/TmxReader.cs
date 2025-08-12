@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using TiledRenderTest.Engine.ShapeOutlines;
 
 namespace TiledRenderTest.Engine
 {
@@ -27,13 +28,13 @@ namespace TiledRenderTest.Engine
 
     internal class TmxReader
     {
-        public static TileMap LoadMapFromTmx(string tmxPath, ContentManager content)
+        public static TileMap LoadMapFromTmx(string tmxPath, ContentManager content, GraphicsDevice graphicsDevice)
         {
             XDoc xDoc = new(tmxPath);
 
             // Load tilesets first as they're needed for tile layers
             List<TileSet> tileSets = LoadTileSetsFromTmx(xDoc, tmxPath, content);
-            List<Layer> layers = LoadLayersFromTmx(xDoc, tileSets);
+            List<Layer> layers = LoadLayersFromTmx(xDoc, tileSets, graphicsDevice);
 
             return new(layers, tileSets, content);
         }
@@ -91,7 +92,7 @@ namespace TiledRenderTest.Engine
             return tileSets;
         }
 
-        public static List<Layer> LoadLayersFromTmx(XDoc xDoc, List<TileSet> tileSets)
+        public static List<Layer> LoadLayersFromTmx(XDoc xDoc, List<TileSet> tileSets, GraphicsDevice graphicsDevice)
         {
             List<Layer> layers = [];
             var map = xDoc.Map;
@@ -154,11 +155,11 @@ namespace TiledRenderTest.Engine
                 else if (layerElement.Name == "objectgroup")
                 {
                     // Handle object layer
-                    ObjectLayer objectLayer = new()
+                    ObjectLayer objectLayer = new(graphicsDevice)
                     {
                         ID = (int?)layerElement.Attribute("id") ?? 0,
                         Name = (string)layerElement.Attribute("name") ?? string.Empty,
-                        Width = (int?)layerElement.Attribute("width") ?? 0,
+                        Width = (float?)layerElement.Attribute("width") ?? 0,
                         Height = (int?)layerElement.Attribute("height") ?? 0,
                         Visible = layerVisible,
                     };
@@ -195,29 +196,49 @@ namespace TiledRenderTest.Engine
                         }
 
                         if (obj.Element("ellipse") != null)
+                        {
                             mapObject.MapObjectShape = MapObjectShape.Ellipse;
+                            mapObject.PolygonPoints = ShapeCreator.EllipsePoints(
+                                mapObject.Position, mapObject.Width, mapObject.Height, 128);
+                        }
                         else if (obj.Element("polygon") != null)
-                            mapObject.MapObjectShape = MapObjectShape.Polygon;
+                        {
+                            // Get the object's base position
+                            float objX = float.Parse(obj.Attribute("x").Value, System.Globalization.CultureInfo.InvariantCulture);
+                            float objY = float.Parse(obj.Attribute("y").Value, System.Globalization.CultureInfo.InvariantCulture);
+
+                            var polygonElement = obj.Element("polygon");
+                            if (polygonElement != null)
+                            {
+                                string pointsString = polygonElement.Attribute("points").Value;
+                                var points = pointsString
+                                    .Split(' ') // split by spaces into each "x,y"
+                                    .Select(pair =>
+                                    {
+                                        var coords = pair.Split(',');
+                                        float px = float.Parse(coords[0], System.Globalization.CultureInfo.InvariantCulture);
+                                        float py = float.Parse(coords[1], System.Globalization.CultureInfo.InvariantCulture);
+
+                                        // Add the object base position to convert from relative → absolute
+                                        return new Vector2(objX + px, objY + py);
+                                    })
+                                    .ToArray();
+
+                                // Store in your MapObject
+                                mapObject.PolygonPoints = points;
+                            }
+                        }
                         else
+                        {
                             mapObject.MapObjectShape = MapObjectShape.Rectangle;
 
-                        var polygonElement = obj.Element("polygon");
-                        if (polygonElement != null)
-                        {
-                            string pointsString = polygonElement.Attribute("points").Value;
-                            var points = pointsString
-                                .Split(' ') // split by spaces into each "x,y"
-                                .Select(pair =>
-                                {
-                                    var coords = pair.Split(',');
-                                    float px = float.Parse(coords[0], System.Globalization.CultureInfo.InvariantCulture);
-                                    float py = float.Parse(coords[1], System.Globalization.CultureInfo.InvariantCulture);
-                                    return new Vector2(px, py);
-                                })
-                                .ToArray();
+                            if (mapObject.Width == 0)
+                                mapObject.Width = tileWidth;
+                            if (mapObject.Height == 0)
+                                mapObject.Height = tileHeight;
 
-                            // Store in your MapObject
-                            mapObject.PolygonPoints = points;
+                            mapObject.PolygonPoints = ShapeCreator.RectanglePoints(
+                                mapObject.Position, mapObject.Width, mapObject.Height);
                         }
 
                         objectLayer.MapObjects.Add(mapObject);
