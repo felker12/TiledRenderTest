@@ -1,8 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System.Collections.Generic;
-using System.Diagnostics;
 using TiledRenderTest.Engine;
 using TiledRenderTest.Entities;
 using TiledRenderTest.Shapes;
@@ -15,22 +13,15 @@ namespace TiledRenderTest
         private SpriteBatch SpriteBatch { get; set; }
         public static int ScreenWidth { get; set; } = 1280;
         public static int ScreenHeight { get; set; } = 720;
-        Sprite Sprite { get; set; } = new();
-        Sprite Sprite2 { get; set; } = new();
         public static Player Player { get; set; } = new();
         Camera Camera { get; set; }
         ShapeManager ShapeManager { get; set; } = new();
 
-        internal List<TileMap> Maps { get; set; } = [];
-
         private TileMap tileMap;
-        private TileMap DungeonMap;
-
-        public double totalTime = 0f;
-        public int count = 0;   
-        public double AverageTime => count > 0 ? totalTime / count : 0;
+        private TileMap DungeonMap; 
 
         Shapes.Rectangle Rectangle { get; set; }
+        Shapes.Rectangle TestingBounds { get; set; }
 
         public Game1()
         {
@@ -49,10 +40,6 @@ namespace TiledRenderTest
             // TODO: Add your initialization logic here
 
             base.Initialize();
-
-            Sprite.Texture = CreateTextureFromColor(Color.Chocolate);
-            Sprite2.Texture = CreateTextureFromColor(Color.Red);
-            Sprite2.Position = new(300, 50);
             Player.Texture = CreateTextureFromColor(Color.White);
             Player.Position = new(-40, -100);
             Player.Color = Color.DarkBlue;
@@ -63,9 +50,11 @@ namespace TiledRenderTest
                 Rotate = true
             };
 
+            TestingBounds = new(new(0, 0), 1000, 1000, Color.Crimson);
+
             ShapeManager.AddShape(Rectangle);
 
-            ShapeManager.AddRandomShapes(1, new(-400, -400), new(400, 400));
+            ShapeManager.AddRandomShapes(30, new(0, 0), new(800, 800));
             var ellipse = new Ellipse(new Vector2(200, 200), 80, 40, Color.Orange, 64) { Rotate = true };
             ShapeManager.AddShape(ellipse);
             ShapeManager.AddShape(Rectangle);
@@ -85,25 +74,6 @@ namespace TiledRenderTest
 
             //DungeonMap.AddLayer(entityLayer);
             DungeonMap.InsertLayerAt(2, entityLayer);
-
-            foreach (var layer in DungeonMap.Layers)
-            {
-                //Debug.WriteLine($"Layer: {layer.Name}, Width: {layer.Width}, Height: {layer.Height}");
-
-                if(layer is ObjectLayer objectLayer)
-                {
-                    Debug.WriteLine(objectLayer.ToString());
-
-                    foreach(MapObject obj in objectLayer.MapObjects)
-                    {
-                        Debug.WriteLine(obj.ToString());
-                    }
-                }
-            }
-
-            //Debug.WriteLine(DungeonMap.Layers.Count);
-
-            //TileMap mapTest = new(TmxReader.LoadMapFromTmx("Content/Dungeon.tmx", Content));
         }
 
         protected override void Update(GameTime gameTime)
@@ -112,58 +82,27 @@ namespace TiledRenderTest
                 Exit();
 
             Camera.Update(Player.Position);
-            //Player.Update(gameTime);
+            Player.Update(gameTime);
 
-            // TODO: Add your update logic here
-            DungeonMap.Update(gameTime);
-
-            //Sprite.Update(gameTime);
-            //Sprite2.Update(gameTime);
-
+            //DungeonMap.Update(gameTime);
 
             base.Update(gameTime);
 
-            //Debug.WriteLine($"Player Position: {Player.Position}");
-
-            UpdateShapes(gameTime);
             ShapeManager.Update(gameTime);
-
-        }
-
-        public void UpdateShapes(GameTime gameTime)
-        {
-            //Stopwatch stopwatch = new();
-            //stopwatch.Start();
-
+            TestingBounds.Update(gameTime); 
+            
             foreach (var shape in ShapeManager.Shapes)
             {
-                shape.Update(gameTime);
-
                 if (shape.Intersects(Player.ShapeRectangle))
-                   shape.Color = Color.Red;
+                    shape.Color = Color.Red;
                 else
                     shape.Color = shape.DefaultColor;
             }
-
-            //stopwatch.Stop();
-
-            //Debug.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
-            //totalTime += stopwatch.Elapsed.TotalMilliseconds;
-            //count++;
-
-            //Debug.WriteLine($"Average Time: {AverageTime} ms, Total Time: {totalTime}");
         }
-
-
 
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-
-            // TODO: Add your drawing code here
-
-            //Stopwatch stopwatch = new();
-            //stopwatch.Start();
 
             SpriteBatch.Begin(
                 SpriteSortMode.Deferred,
@@ -175,7 +114,7 @@ namespace TiledRenderTest
                 Camera.Transformation);
 
             //tileMap.Draw(SpriteBatch, Camera.Transformation);
-            DungeonMap.Draw(SpriteBatch);
+            //DungeonMap.Draw(SpriteBatch);
             SpriteBatch.End();
 
             SpriteBatch.Begin(
@@ -187,29 +126,18 @@ namespace TiledRenderTest
                null,
                Camera.Transformation);
 
-            //Sprite.Draw(SpriteBatch);
-            //Sprite2.Draw(SpriteBatch);
-
-            ShapeManager.DrawOutline(SpriteBatch);
-            //ShapeManager.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 12);
+            //ShapeManager.DrawOutline(SpriteBatch);
+            ShapeManager.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 12);
             //ShapeManager.DrawTriangulated(SpriteBatch);
             //ShapeManager.DrawTriangulatedUsingPrimitives(GraphicsDevice, Camera.Transformation);
             //ShapeManager.DrawOutlineUsingPrimitives(GraphicsDevice, Camera.Transformation);
             //ShapeManager.DrawFilledUsingPrimitives(GraphicsDevice, Camera.Transformation);
             //ShapeManager.DrawOutlineThickUsingPrimitives(GraphicsDevice, Camera.Transformation, 4);
 
-            //Rectangle.DrawFilled(SpriteBatch);
+            Player.Draw(SpriteBatch);
 
-            //Player.Draw(SpriteBatch);
+            TestingBounds.DrawOutline(SpriteBatch);
             SpriteBatch.End();
-
-            //stopwatch.Stop();
-
-            //Debug.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
-            //totalTime += stopwatch.Elapsed.TotalMilliseconds;
-            //count++;
-
-            //Debug.WriteLine($"Average Time: {AverageTime} ms, Total Time: {totalTime}");
         }
 
         public static Texture2D CreateTextureFromColor(Color color)

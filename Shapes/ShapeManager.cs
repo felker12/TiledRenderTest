@@ -16,11 +16,13 @@ namespace TiledRenderTest.Shapes
         public List<Shape> Shapes { get; private set; } = [];
         private Random Random { get; set; } = new();
 
-        public virtual VertexPositionColor[] PerimeterVertices { get; set; }
-        public virtual VertexPositionColor[] FilledVertices { get; set; }
-        public virtual VertexPositionColor[] TriangleVertices { get; set; }
-        public virtual VertexPositionColor[] ThickLineVertices { get; set; }
+        public virtual VertexPositionColor[] PerimeterVertices { get; private set; }
+        public virtual VertexPositionColor[] FilledVertices { get; private set; }
+        public virtual VertexPositionColor[] TriangleVertices { get; private set; }
+        public virtual VertexPositionColor[] ThickLineVertices { get; private set; }
         private BasicEffect BasicEffect { get; set; } = null!;
+
+        public int LineThickness = 2;
 
         public ShapeManager() { }
 
@@ -34,10 +36,11 @@ namespace TiledRenderTest.Shapes
 
             foreach (var shape in Shapes)
             {
-                shape.Motion = new(1, 1);
-
                 shape.Update(gameTime);
-                shape.RebuildThickVertices(shape.LineThickness);
+                shape.RebuildThickVertices(LineThickness);
+
+
+                ShapeMover.MoveShapeWithinBounds(shape, new(0, 0), new(1000, 1000));
 
                 _perimeterTemp.AddRange(shape.GetOutlineAsLineList());
                 _filledTemp.AddRange(shape.FilledVertices);
@@ -52,7 +55,6 @@ namespace TiledRenderTest.Shapes
         }
 
         //SpriteBatch Draw calls 
-
         public virtual void DrawOutline(SpriteBatch spriteBatch, int outlineThickness = 1)
         {
             foreach (var shape in Shapes)
@@ -134,6 +136,8 @@ namespace TiledRenderTest.Shapes
 
         public virtual void DrawOutlineThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix viewMatrix, int thickness = 1)
         {
+            LineThickness = thickness;
+
             if (ThickLineVertices is null || ThickLineVertices.Length == 0) return;
 
             EnsureBasicEffect(graphicsDevice, viewMatrix); ;
@@ -155,6 +159,23 @@ namespace TiledRenderTest.Shapes
         {
             ArgumentNullException.ThrowIfNull(shape);
             Shapes.Add(shape);
+
+            int motionX, motionY;
+
+            int random = Random.Next(0, 2);
+            if (random == 0)
+                motionX = -1;
+            else 
+                motionX = 1;
+
+            random = Random.Next(0, 2);
+            if (random == 0) 
+                motionY = -1;
+            else 
+                motionY = 1;
+
+            shape.Motion = new(motionX, motionY);
+            shape.Motion.Normalize();
         }
 
         public void RemoveShape(Shape shape)
@@ -240,7 +261,7 @@ namespace TiledRenderTest.Shapes
                 switch (shape)
                 {
                     case 0:
-                        Shapes.Add(new Star(position, color, Random.Next(3, 10), Random.Next(70, 150), Random.Next(40, 70))
+                        AddShape(new Star(position, color, Random.Next(3, 10), Random.Next(70, 150), Random.Next(40, 70))
                         {
                             Rotate = true,
                             RotationSpeedDegreesPerSecond = speed,
@@ -248,7 +269,7 @@ namespace TiledRenderTest.Shapes
                         break;
 
                     case 1:
-                        Shapes.Add(new Circle(position, Random.Next(20, 100), color, Random.Next(3, 64))
+                        AddShape(new Circle(position, Random.Next(20, 100), color, Random.Next(3, 64))
                         {
                             Rotate = true,
                             RotationSpeedDegreesPerSecond = speed,
@@ -256,7 +277,7 @@ namespace TiledRenderTest.Shapes
                         break;
 
                     case 2:
-                        Shapes.Add(new Shapes.Rectangle(position, Random.Next(50, 150), Random.Next(50, 150), color)
+                        AddShape(new Shapes.Rectangle(position, Random.Next(50, 150), Random.Next(50, 150), color)
                         {
                             Rotate = true,
                             RotationSpeedDegreesPerSecond = speed,
@@ -268,7 +289,7 @@ namespace TiledRenderTest.Shapes
                         Vector2 p2 = position + new Vector2(Random.Next(-50, 50), Random.Next(50, 150));
                         Vector2 p3 = position + new Vector2(Random.Next(50, 150), Random.Next(-50, 50));
 
-                        Shapes.Add(new Triangle(p1, p2, p3, color)
+                        AddShape(new Triangle(p1, p2, p3, color)
                         {
                             Rotate = true,
                             RotationSpeedDegreesPerSecond = speed,

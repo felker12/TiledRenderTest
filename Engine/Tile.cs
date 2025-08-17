@@ -15,7 +15,6 @@ namespace TiledRenderTest.Engine
         public int LocalTileId { get; } = globalTileId - tileSet.FirstGid;
 
         public bool Contains(Vector2 point) => Bounds.Contains(point);
-        public bool Contains(Point point) => Bounds.Contains(point);
         public bool Intersects(Rectangle rectangle) => Bounds.Intersects(rectangle);
 
         public override string ToString()

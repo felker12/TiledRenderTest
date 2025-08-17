@@ -22,7 +22,7 @@ namespace TiledRenderTest.Shapes
             filledVertices,
             triangleVertices;
 
-        private List<VertexPositionColor> thickVertices = [];
+        private VertexPositionColor[] thickVertices = [];
 
         private float _cachedSin, _cachedCos, _lastRotationStep = float.NaN; 
         private BoundingBox _boundingBox;
@@ -42,16 +42,15 @@ namespace TiledRenderTest.Shapes
         public virtual VertexPositionColor[] PerimeterVertices { get { return perimeterVertices; } }
         public virtual VertexPositionColor[] FilledVertices { get { return filledVertices; } }
         public virtual VertexPositionColor[] TriangleVertices { get { return triangleVertices; } }
-        public List<VertexPositionColor> ThickLineVertices => thickVertices;
+        public VertexPositionColor[] ThickLineVertices => thickVertices;
         public virtual int[] TriangleIndices { get { return triangleIndices; } }
         public virtual int TriangleCount { get { return triangleIndices?.Length / 3 ?? 0; } }
         public virtual int[] TriangulationLineIndices { get { return triangulationLineIndices; } }
         public bool Rotate { get; set; } = false; // Default rotation state
-        public int LineThickness { get; protected set; } = 1; // Default line thickness
-        //public virtual BasicTriangle[] Triangles { get { return triangles; } }
         public virtual BasicTriangle[] Triangles { get; set; }
         public Vector2 Motion { get; set; } = Vector2.Zero;
-        public float Speed { get; set; } = 15f;
+        public float Speed { get; set; } = 150f;
+        public bool CanMove { get; set; } = true;
 
         public void SetPosition(Vector2 newPosition)
         {
@@ -105,7 +104,8 @@ namespace TiledRenderTest.Shapes
             if (Rotate)
                 PerformRotation(gameTime);
 
-            SetPosition(Position + Motion * Speed * (float)gameTime.ElapsedGameTime.TotalSeconds);
+            if(CanMove && Motion != Vector2.Zero)
+                SetPosition(Position + Motion * Speed * (float)gameTime.ElapsedGameTime.TotalSeconds);
         }
 
         public virtual void PerformRotation(GameTime gameTime)
@@ -221,6 +221,19 @@ namespace TiledRenderTest.Shapes
                     );
                     line.Draw(spriteBatch, Texture, Color);
                 }
+            }
+        }
+
+        public virtual void DrawOutlineThickUsingPrimitives(GraphicsDevice graphicsDevice, Matrix transformMatrix, int thickness = 1)
+        {
+            RebuildThickVertices(thickness); 
+
+            basicEffect = InitializeBasicEffect(graphicsDevice, transformMatrix);
+
+            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                graphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, ThickLineVertices, 0, ThickLineVertices.Length / 3);
             }
         }
 
@@ -387,12 +400,23 @@ namespace TiledRenderTest.Shapes
 
         public void RebuildThickVertices(int thickness)
         {
-            thickVertices.Clear();
+            thickVertices = [];
 
+            // Calculate total vertices needed (6 per line for TriangleList)
+            int totalVertices = sides.Length * 6;
+            thickVertices = new VertexPositionColor[totalVertices];
+    
+            int vertexIndex = 0;
             foreach (var line in sides)
             {
                 line.RebuildThickVertices(thickness);
-                thickVertices.AddRange(line.ThickVertices); // Combine all thick vertices
+        
+                // Copy all 6 vertices from the line's thick vertices
+                var lineThickVerts = line.ThickVertices;
+                for (int i = 0; i < 6; i++)
+                {
+                    thickVertices[vertexIndex++] = lineThickVerts[i];
+                }
             }
         }
 

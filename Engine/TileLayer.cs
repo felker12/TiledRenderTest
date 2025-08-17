@@ -113,15 +113,5 @@ namespace TiledRenderTest.Engine
         {
             tile = GetTileAt(position);
         }
-
-        public Tile GetTileAt(Point point)
-        {
-            return Tiles.FirstOrDefault(tile => tile.Contains(point));
-        }
-
-        public void GetTileAt(Point point, out Tile tile)
-        {
-            tile = GetTileAt(point);
-        }
     }
 }

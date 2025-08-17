@@ -1,26 +1,66 @@
 ﻿using Microsoft.Xna.Framework;
 using System;
-using System.Reflection.Metadata;
 
 namespace TiledRenderTest.Shapes
 {
     public static class ShapeMover
     {
-        private static readonly Random random = new();
+        public static void MoveShapeWithinBounds(Shape shape, Vector2 topLeft, Vector2 bottomRight)
+        {
+            if (shape.Points == null || shape.Points.Length == 0 || shape.CanMove is false || shape.Motion == Vector2.Zero)
+                return;
 
-        // Static default
-        public const float DefaultSpeed = 150f;
-        public static Vector2 DefaultVelocity => new(DefaultSpeed, DefaultSpeed);
+            Vector2 motion = shape.Motion;
 
-        
+            // If shape is out of bounds, bounce
+            if (!IsShapeInBounds(shape, topLeft, bottomRight))
+            {
+                // Undo motion
+                shape.SetPosition(shape.Position - motion);
 
+                // Bounce by reversing velocity component(s)
+                ShapeBounds bounds = GetShapeBounds(shape);
 
-        //TODO add logic to move the shape around an area
+                bool hitHorizontal = false;
+                bool hitVertical = false;
 
+                // Check horizontal bounds
+                if (shape.Position.X + bounds.MinX <= topLeft.X)
+                {
+                    motion.X *= -1;
+                    hitHorizontal = true;
+                    shape.SetPosition(new Vector2(topLeft.X - bounds.MinX, shape.Position.Y));
+                }
+                else if (shape.Position.X + bounds.MaxX >= bottomRight.X)
+                {
+                    motion.X *= -1;
+                    hitHorizontal = true;
+                    shape.SetPosition(new Vector2(bottomRight.X - bounds.MaxX, shape.Position.Y));
+                }
 
+                // Check vertical bounds
+                if (shape.Position.Y + bounds.MinY <= topLeft.Y)
+                {
+                    motion.Y *= -1;
+                    hitVertical = true;
+                    shape.SetPosition(new Vector2(shape.Position.X, topLeft.Y - bounds.MinY));
+                }
+                else if (shape.Position.Y + bounds.MaxY >= bottomRight.Y)
+                {
+                    motion.Y *= -1;
+                    hitVertical = true;
+                    shape.SetPosition(new Vector2(shape.Position.X, bottomRight.Y - bounds.MaxY));
+                }
 
+                // Flip rotation direction if there was any collision
+                if (hitHorizontal || hitVertical)
+                {
+                    shape.RotationSpeedDegreesPerSecond *= -1; 
+                }
 
-
+                shape.Motion = motion;
+            }
+        }
 
         // Check if shape is completely within bounds
         public static bool IsShapeInBounds(Shape shape, Vector2 topLeft, Vector2 bottomRight)
